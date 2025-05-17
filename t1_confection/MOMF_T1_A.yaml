@@ -1,0 +1,462 @@
+# MOMF Tier 1 A (A1 and A2) build parameterization yaml file
+
+# Model external dependencies: Directories, Files, sheets and columns
+########################################################################################
+# Directories
+A1_inputs: './A1_Inputs'
+A1_outputs: './A1_Outputs'
+A2_extra_inputs: './A2_Extra_Inputs'
+A2_output: './A2_Output_Params/'
+A2_output_BAU: './A2_Output_Params/BAU/'
+A2_output_NDP: './A2_Output_Params/NDCincond/'
+
+# Files, sheets and columns
+# A1
+# Structural feature 1
+# File (First letter of the word y uppercase)
+Modes_Demand: '/A-I_Classifier_Modes_Demand.xlsx'
+# Sheets (First letter of the word y uppercase)
+Sectors: 'Sectors'
+Fuel_per_Sectors: 'Fuel_per_Sectors'
+Fuel_Code: 'Fuel_to_Code'
+# Columns (First letter of the word y lowercase)
+sector: 'Sector'
+plain_eng: 'Plain English'
+plain_spa: 'Plain Spanish'
+address: 'Address_Method'
+fuel_slash_sector: 'Fuel/Sector'
+fuel: 'Fuel'
+code: 'Code'
+# Structural feature 2
+# File
+Modes_Supply: '/A-I_Classifier_Modes_Supply.xlsx'
+# Sheets
+Pri_eng: 'PrimaryEnergy'
+Sec_eng: 'SecondaryEnergy'
+# Columns
+final: 'Final in Chain'
+pri_commodity: 'Primary_Commodity'
+sec_commodity: 'Secondary_Commodity'
+ter_commodity: 'Tertiary_Commodity'
+tech_code: 'Tech - Code'
+tech_plain_eng: 'Tech - Plain English'
+tech_plain_spa: 'Tech - Plain Spanish'
+fuel_code_in: 'Fuel - Code (Input)'
+fuel_plain_eng_in: 'Fuel - Plain English (Input)'
+fuel_plain_spa_in: 'Fuel - Plain Spanish (Input)'
+fuel_code_out: 'Fuel - Code (Output)'
+fuel_plain_eng_out: 'Fuel - Plain English (Output)'
+fuel_plain_spa_out: 'Fuel - Plain Spanish (Output)'
+# Structural feature 3
+# File
+Modes_Trans: '/A-I_Classifier_Modes_Transport.xlsx'
+# Sheets
+Mode_Broad: 'Mode_Broad'
+Mode_per_Vehfuel: 'Mode_per_VehFuel'
+Fuel_per_Vehfuel: 'Fuel_per_VehFuel'
+# Fuel to Code: is in strutural feature 1
+Vehfuel_Code: 'VehFuel_to_Code'
+Tech_Code: 'Tech_to_Code'
+Dem_Code: 'Dem_to_Code'
+# Columns
+# Fuel, Code, Plain English and Plain Spanish: are strutural feature 1
+vehfuel: 'VehFuel'
+techs: 'Techs'
+dem_codes: 'Demand_Codes'
+techs_slash_dem: 'Techs/Demand'
+vehfuel_slash_tech: 'VehFuel/Tech'
+# Structural feature 3
+# File
+Horizon_configuration: '/A-I_Horizon_Configuration.xlsx'
+# Columns
+initial_year: 'Initial_Year'
+final_year: 'Final_Year'
+# Print Base Year
+# File
+Print_Base_Year: '/A-O_AR_Model_Base_Year.xlsx'
+# Print Projections
+# File
+Print_Proj: '/A-O_AR_Projections.xlsx'
+# Print Demand
+# File
+Print_Demand: '/A-O_Demand.xlsx'
+# Sheets
+Dem_Proj: 'Demand_Projection'
+# Print Parametrization
+# File
+Print_Paramet: '/A-O_Parametrization.xlsx'
+# Print Fleet
+# File
+Print_Fleet: '/A-O_Fleet.xlsx'
+# Sheets
+Cali_Fleet: 'Calibration_Fleet'
+# Pikcle Fleet Groups
+# File
+Pickle_Fleet_Groups: '/A-O_Fleet_Groups.pickle'
+# Log File A1
+# File
+log_file_A1: '/Log.txt'
+
+# A2
+# Extra Scenarios
+# File
+Xtra_Scen: '/A-Xtra_Scenarios.xlsx'
+# Columns
+name: 'Name'
+param: 'Param'
+# Extra Projections
+# File
+Xtra_Proj: '/A-Xtra_Projections.xlsx'
+# Columns
+variable: 'Variable'
+proj_mode: 'Projection Mode'
+dem_slash_share: 'Demand/Share'
+fuel_slash_tech: 'Fuel/Tech'
+proj_mode: 'Projection.Mode'
+proj_param: 'Projection.Parameter'
+# Extra Battery Replacement
+# File
+Xtra_Battery: '/A-Xtra_Battery_Replacement.xlsx'
+# Columns
+parameter: 'Parameter'
+# Extra Emissions
+# File
+Xtra_Emi: '/A-Xtra_Emissions.xlsx'
+# Sheets
+GHGs: 'GHGs'
+Externalities: 'Externalities'
+# Columns
+emi: 'Emissions'
+external_cost: 'External Cost'
+tech: 'Tech'
+emi_acti_ratio: 'EmissionActivityRatio'
+emi_penal: 'EmissionPenalty'
+# Print Demand Completed
+# File
+Print_Dem_Completed: '/A-O_Demand_COMPLETED.xlsx'
+# Sheets
+A_O_Dem: 'A-O_Demand'
+# Print Parametrization Completed
+# File
+Print_Paramet_Completed: '/A-O_Parametrization_COMPLETED.xlsx'
+# Print Parametrization Natural Completed
+# File
+Print_Paramet_Natural_Completed: '/A-O_Parametrization_Natural_COMPLETED.xlsx'
+# Print Projection Completed
+# File
+Print_Proj_Completed: '/A-O_AR_Projections_COMPLETED.xlsx'
+# Print A2 Structure Lists
+# File
+Print_A2_Struct_List: 'A2_Structure_Lists.xlsx'
+# Sheets
+lists: 'Lists'
+# Pickle Fleet Groups Distance
+# File
+Pickle_Fleet_Groups_Dist: '/A-O_Fleet_Groups_Distance.pickle'
+# Pickle Fleet Groups OR
+# File
+Pickle_Fleet_Groups_OR: '/A-O_Fleet_Groups_OR.pickle'
+# Pickle Fleet Groups T2D
+# File
+Pickle_Fleet_Groups_T2D: '/A-O_Fleet_Groups_T2D.pickle'
+########################################################################################
+
+################################# Variable definitions #################################
+# Years variables
+#----------------------------------------------------------------------------------#
+# Base year
+base_year: 2018
+initial_year: 2018
+
+# Final year
+final_year: 2050
+
+test_tertiary_fuels: [
+    'Electricity',
+    'Hydrogen',
+    'Gases',
+    'Natural_Gas',
+    'Diesel_Blend',
+    'Gasoline_Blend' 
+    # 'Moist_Broadleaf',
+    # 'Coniferous',
+    # 'Mangrove',
+    # 'Deciduous_Broadleaf',
+    # 'Commercial_Plantation',
+    # 'Clinker_production',
+    # 'Cement_production',
+    # 'Inorganic_collection',
+    # 'Organic_collection',
+    # 'Blend_collection',
+    # 'No_collection',
+    # 'Inorganic_source_separation',
+    # 'Organic_source_separation',
+    # 'No_source_separation',
+    # 'Total_solid_waste',
+    # 'Sewer_water',
+    # 'Direct_discharged_water',
+    # 'Total_waste_water'
+    ]
+
+# Type of transport
+#---------------------------#
+dict_dist_fam_to_name_eng: {
+  PUB: Public,
+  PRI: Private,
+  HEA: Heavy Freight ,
+  LIG: Light Freight,
+  NONMOT: Non motorized
+  #TUR: Tourism
+  }
+
+dict_dist_fam_to_name_spa: {
+  PUB: Público,
+  PRI: Privado,
+  HEA: Carga Pesada,
+  LIG: Carga Liviana,
+  NONMOT: No motorizada
+  #TUR: Turismo
+  }
+#---------------------------#
+
+# General Variables
+#---------------------------------------------------------------#
+xtra_scen: {
+  Main_Scenario: 'BAU',
+  Other_Scenarios: ['NDCincond','NDCcond'],
+  Region: 'CR',
+  Mode_of_Operation: 1,
+  Season: [1,2,3], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  DayType: [1], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  DailyTimeBracket: [1,2], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  Timeslice: 'Some',
+  Timeslices: ['DRY', 'RAIN'],
+  }
+
+# Remember the values of the "Conversionls", "Conversionld" and "Conversionlh"
+# are binary
+Conversionls: [] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
+Conversionld: [] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
+Conversionlh: [] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
+
+#---------------------------------------------------------------#
+# Technologies parameters
+#---------------------------------------------------------------#
+codes_primary_secondary_demands_df_headers: [
+  'Primary.Tech', 'Primary.Fuel.O',
+  'Secondary.Fuel.I', 'Secondary.Tech', 'Secondary.Fuel.O',
+  'Demands.Fuel.I', 'Demands.Tech', 'Demands.Fuel.O'
+  ]
+
+codes_transport_df_headers: [ 
+  'DISTTRN.Fuel.I', 'DISTTRN.Tech', 'DISTTRN.Fuel.O',
+  'TRN.Fuel.I', 'TRN.Tech', 'TRN.Fuel.O',
+  'TRNGROUP.Fuel.I', 'TRNGROUP.Tech', 'TRNGROUP.Fuel.O'
+  ]
+
+tech_param_list_all_notyearly: [
+  'CapacityToActivityUnit', 'OperationalLife'
+  ]
+
+tech_param_list_primary: [     
+  'CapitalCost', 'FixedCost', 'VariableCost', 
+  'ResidualCapacity', 'TotalAnnualMaxCapacity',
+  'TotalTechnologyAnnualActivityUpperLimit',
+  'TotalTechnologyAnnualActivityLowerLimit',
+  'TotalAnnualMinCapacityInvestment',
+  'CapacityFactor', 'AvailabilityFactor'
+  ]
+tech_param_list_secondary: [
+  'CapitalCost', 'FixedCost', 'VariableCost', 
+  'ResidualCapacity', 'TotalAnnualMaxCapacity',
+  'TotalTechnologyAnnualActivityUpperLimit',
+  'TotalTechnologyAnnualActivityLowerLimit',
+  'TotalAnnualMinCapacityInvestment',
+  'CapacityFactor', 'AvailabilityFactor'
+  ]
+
+tech_param_list_demands: [
+  'CapitalCost', 'FixedCost', 'ResidualCapacity'
+  ]
+
+tech_param_list_disttrn: [
+  'CapitalCost', 'FixedCost', 'ResidualCapacity'
+  ]
+
+tech_param_list_trn: [
+  'CapitalCost', 'FixedCost', 'ResidualCapacity', 
+  'TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit'
+  ]
+
+tech_param_list_trngroups: [
+  'TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit'                            
+  ]
+
+tech_param_list_all_notyearly_df_headers: [
+  'Tech.Type','Tech.ID', 'Tech', 'Tech.Name',
+  'Parameter.ID', 'Parameter', 'Unit', 'Value'
+  ]
+
+tech_param_list_all_yearly_df_headers: [
+  'Tech.ID', 'Tech', 'Tech.Name', 'Parameter.ID',
+  'Parameter', 'Unit', 'Projection.Mode',
+  'Projection.Parameter'
+  ]
+#---------------------------------------------------------------#
+
+# Demand data
+#---------------------------------------------------------------#
+df_demands_all_header: [
+  'Demand/Share', 'Fuel/Tech', 'Name', 'Ref.Cap.BY',
+  'Ref.OAR.BY', 'Ref.km.BY', 'Projection.Mode',
+  'Projection.Parameter'
+  ]
+
+# A: primary technologies
+df_techs_primary_base_year_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
+  'Value.Fuel.O', 'Unit.Fuel.O'
+  ]
+
+df_techs_primary_projection_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+
+# B: secondary technologies
+df_techs_secondary_base_year_HEADER: [
+  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
+  'Value.Fuel.O', 'Unit.Fuel.O'
+  ]
+
+df_techs_secondary_projection_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name', 'Direction',
+  'Projection.Mode', 'Projection.Parameter'
+  ]
+
+# C: Simple methods
+df_techs_demand_base_year_HEADER: [
+  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
+  'Value.Fuel.O', 'Unit.Fuel.O'
+  ]
+
+df_techs_demand_projection_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+
+# D: Fuel distribution elements of transport
+df_techs_DISTTRN_base_year_HEADER: [
+  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
+  'Value.Fuel.O', 'Unit.Fuel.O'
+  ]
+
+df_techs_DISTTRN_projection_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+
+# E: Vehicle technologies
+df_techs_TRN_base_year_HEADER: [
+  'Fuel.I.1', 'Fuel.I.1.Name', 'Value.Fuel.I.1', 'Unit.Fuel.I.1',
+  'Fuel.I.2', 'Fuel.I.2.Name', 'Value.Fuel.I.2', 'Unit.Fuel.I.2',
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O',
+  'Unit.Fuel.O'
+  ]
+
+df_techs_TRN_projection_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+
+# F: Group vehicle technologies
+df_techs_TRNGROUP_base_year_HEADER: [
+  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
+  'Value.Fuel.O', 'Unit.Fuel.O'
+  ]
+
+df_techs_TRNGROUP_projection_HEADER: [
+  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Direction', 'Projection.Mode', 'Projection.Parameter'
+  ]
+
+tech_param_list_dfs_names: [
+  'Fixed Horizon Parameters', 'Primary Techs', 'Secondary Techs', 
+  'Timeslices', 'Demand Techs', 'Transport Fuel Distribution',
+  'Vehicle Techs', 'Vehicle Groups'
+  ]
+#---------------------------------------------------------------#
+
+# Prints
+#---------------------------------------------------------------#
+df_base_year_names: [
+  'Primary', 'Secondary', 'Demand Techs', 'Distribution Transport',
+  'Transport', 'Transport Groups'
+  ]
+
+df_projection_names: [
+  'Primary', 'Secondary', 'Demand Techs', 'Distribution Transport',
+  'Transport', 'Transport Groups'
+  ]
+#---------------------------------------------------------------#
+
+df_techs_fleet_HEADER: [
+  'Group.ID', 'Group/Vehicle', 'Techs', 'Description',
+  'Fleet Unit', 'Base Year', 'Base Year Value'
+  ]
+
+# A2
+sets: [
+  'PARAMETER', 'Scenario', 'REGION', 'TECHNOLOGY', 'FUEL', # For the production of the parameter files
+  'EMISSION', 'MODE_OF_OPERATION', 'YEAR', 'TIMESLICE',
+  'SEASON', 'DAYTYPE', 'DAILYTIMEBRACKET', 'STORAGE', 'Value'
+  ]
+
+AR_Osemosys_Parameters: [ 'InputActivityRatio', 'OutputActivityRatio']
+
+demand_headers: [
+  'Demand/Share', 'Fuel/Tech', 'Ref.Cap.BY', 'Ref.OAR.BY', 'Ref.km.BY',
+  'Projection.Mode', 'Projection.Parameter', 'Introduced.Unit', 'Target.Unit'
+  ]
+
+cap_params: ['TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit']
+cap_params_Rail: ['TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit']
+################################################################
+
+################################# Conditions #################################
+primary: 'Primary'
+transport: 'Transport'
+flat: 'Flat'
+relative: 'Relative'
+user_rel_BY: 'User defined trajectory relative to BY'
+freight: 'TRNFRE'
+yearly_per_change: 'Yearly percent change'
+user_defined: 'User defined'
+inter_final_value: 'Interpolate to final value'
+flat_aft_final_year: 'Flat after final year'
+E6: 'DEMTRN'
+techs: 'TRN'
+gdp: 'GDP'
+joint: 'joint'
+passenger: 'passenger'
+freight_column: 'TRNFRE'
+demand: 'Demand'
+fuel__tech: 'Fuel/Tech'
+not_considered: 'not considered'
+perce_grow_incom_years: 'Percent growth of incomplete years'
+inter_Stated_value_proj_param: 'Interpolate to stated end value from projection parameter'
+zero: 'Zero'
+veh_techs: 'Vehicle Techs'
+veh: 'vehicle'
+vehs: 'Vehicles'
+Gvkm: 'Gvkm'
+target_type: 'Target Type'
+hard: 'Hard'
+lower: 'Lower'
+continuos: 'Continuous'
+empty: 'EMPTY'
+other_techs: 'Other_Techs'
+accor_dem: 'According to demand'
+ref_km_by: 'Ref.km.BY'
+columns4: ['Year','Tech','Timeslice','Fuel','Emission','MOO','Region']
+##############################################################################
