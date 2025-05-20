@@ -259,27 +259,11 @@ def update_parametrization_timeslices(df, output_excel_path):
             "Parameter.ID": 9,
             "Parameter": "CapacityFactor",
             "Unit": None,
-            "Projection.Mode": None,
+            "Projection.Mode": "User defined",
             "Projection.Parameter": 0
         }
 
-        iso = tech[6:9]
-        region = tech[9:11]
-        country = iso_country_map.get(iso, f"Unknown country ({iso})")
-
-        if tech.startswith("PWRHYD"):
-            tech_type = "Hydroelectric power plants"
-        elif tech.startswith("PWRWND"):
-            tech_type = "Wind power plants"
-        elif tech.startswith("PWRSOL"):
-            tech_type = "Solar power plants"
-        else:
-            tech_type = "Power plants"
-
-        name = f"{tech_type} in {country}"
-        if region != "XX":
-            name += f", region {region}"
-        record["Tech.Name"] = name
+        record["Tech.Name"] = parse_tech_name(tech)
 
         for _, row in group.iterrows():
             record[str(row["YEAR"])] = row["VALUE"]
@@ -304,43 +288,96 @@ def update_parametrization_timeslices(df, output_excel_path):
     wb.save(output_excel_path)
     print("[Success] Sheet 'Timeslices' in Parametrization file updated.")
 
-    
+def update_parametrization_yearsplit(df, output_excel_path):
+    """Updates Yearsplit sheet in A-O_Parametrization.xlsx using CapacityFactor data."""
+    unique_years = sorted(df["YEAR"].unique())
+    year_cols = [str(y) for y in unique_years]
+
+    # tech_id_map = {}
+    # tech_id_counter = 1
+    records = []
+
+    for timeslice, group in df.groupby("TIMESLICE"):
+        # if tech not in tech_id_map:
+        #     tech_id_map[tech] = tech_id_counter
+        #     tech_id_counter += 1
+
+        record = {
+            "Timeslices": timeslice,
+            "Parameter.ID": 14,
+            "Parameter": "Yearsplit",
+            "Unit": None,
+            "Projection.Mode": "User defined",
+            "Projection.Parameter": 0
+        }
+
+        for _, row in group.iterrows():
+            record[str(row["YEAR"])] = row["VALUE"]
+
+        records.append(record)
+
+    df_cap = pd.DataFrame(records)
+    fixed_cols = [
+        "Timeslices", "Parameter.ID",
+        "Parameter", "Unit", "Projection.Mode", "Projection.Parameter"
+    ]
+    df_cap = df_cap[fixed_cols + year_cols]
+
+    # Solo usa el archivo ubicado en OUTPUT_FOLDER
+    wb = load_workbook(output_excel_path)
+    ws = wb["Yearsplit"]
+    ws.delete_rows(1, ws.max_row)
+
+    for row in dataframe_to_rows(df_cap, index=False, header=True):
+        ws.append(row)
+
+    wb.save(output_excel_path)
+    print("[Success] Sheet 'Yearsplit' in Parametrization file updated.")
+
 def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_excel_path, input_excel_path):
-    """Updates the 'Fixed Horizon Parameters' sheet using CapacityToActivityUnit and OperationalLife data."""
-    combined = []
-    all_records = []
-    for df, param_id, param_name in [
-        (df_ctau, 1, "CapacityToActivityUnit"),
-        (df_oplife, 2, "OperationalLife")
-    ]:
+    """
+    Updates the 'Fixed Horizon Parameters' sheet using CapacityToActivityUnit and OperationalLife data.
+    Ensures all technologies have entries for all expected parameters, filling with default value = 1.
+    Results are sorted by Tech (alphabetical) and then by Parameter.ID (numeric).
+    """
+
+    PARAMETERS = [
+        ("CapacityToActivityUnit", 1, df_ctau),
+        ("OperationalLife", 2, df_oplife)
+    ]
+
+    all_techs = set()
+    param_data = {}
+
+    for param_name, param_id, df in PARAMETERS:
+        param_data[param_name] = {}
         for _, row in df.iterrows():
             tech = row["TECHNOLOGY"]
             value = row["VALUE"]
-            all_records.append((tech, param_id, param_name, value))
+            param_data[param_name][tech] = value
+            all_techs.add(tech)
 
-    tech_ids = {}
-    tech_counter = 1
+    tech_ids = {tech: idx + 1 for idx, tech in enumerate(sorted(all_techs))}
+
     output_rows = []
+    for tech in all_techs:
+        for param_name, param_id, _ in PARAMETERS:
+            value = param_data[param_name].get(tech, 1)
+            output_rows.append({
+                "Tech.Type": "Primary",
+                "Tech.ID": tech_ids[tech],
+                "Tech": tech,
+                "Tech.Name": parse_tech_name(tech),
+                "Parameter.ID": param_id,
+                "Parameter": param_name,
+                "Unit": None,
+                "Value": value
+            })
 
-    for tech, param_id, param_name, value in all_records:
-        if tech not in tech_ids:
-            tech_ids[tech] = tech_counter
-            tech_counter += 1
-
-        output_rows.append({
-            "Tech.Type": "Primary",
-            "Tech.ID": tech_ids[tech],
-            "Tech": tech,
-            "Tech.Name": parse_tech_name(tech),
-            "Parameter.ID": param_id,
-            "Parameter": param_name,
-            "Unit": None,
-            "Value": value
-        })
-
-    # Convert to DataFrame and sort by Tech.ID
     df_fixed = pd.DataFrame(output_rows)
-    df_fixed = df_fixed.sort_values(by="Tech.ID", ascending=True)
+
+    # Apply sorting: first by Tech alphabetically, then by Parameter.ID
+    df_fixed = df_fixed.sort_values(by=["Tech", "Parameter.ID"], ascending=[True, True])
 
     # Write to Excel
     wb = load_workbook(input_excel_path)
@@ -352,62 +389,60 @@ def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_e
 
     os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
     wb.save(output_excel_path)
-    print("[Success] Sheet 'Fixed Horizon Parameters' in Parametrization file updated.")
+    print("[Success] Sheet 'Fixed Horizon Parameters' in Parametrization file updated (sorted).")
 
 def update_parametrization_primary_demand_techs(og_data, output_excel_path):
-    """Updates the 'Primary Techs' and 'Demand Techs' sheets based on parameter-type and tech suffix restrictions."""
-    
     PARAMETERS = [
         "CapitalCost", "FixedCost", "VariableCost", "ResidualCapacity",
         "TotalAnnualMaxCapacity", "TotalTechnologyAnnualActivityUpperLimit",
         "TotalTechnologyAnnualActivityLowerLimit", "TotalAnnualMinCapacityInvestment",
-        "CapacityFactor", "AvailabilityFactor"
+        "AvailabilityFactor", "ReserveMarginTagFuel",
+        "ReserveMarginTagTechnology", "TotalAnnualMaxCapacityInvestment"
     ]
-    
+
     PARAMETER_IDS = {name: idx + 1 for idx, name in enumerate(PARAMETERS)}
-    
-    primary_records = []
-    demand_records = []
+    primary_records, secondary_records, demand_records = [], [], []
     tech_ids = {}
     tech_counter = 1
     all_years = set()
+    techs_by_param = {}
 
     for param in PARAMETERS:
         if param not in og_data:
             continue
         df = og_data[param]
-        df_grouped = df.groupby("TECHNOLOGY")
-        for tech, group in df_grouped:
-            is_demand_tech = tech.endswith("02")
-            if param in ["CapitalCost", "FixedCost", "ResidualCapacity"]:
-                target = demand_records if is_demand_tech else primary_records
-                if not is_demand_tech and tech.endswith("02"):
-                    continue
-            else:
-                if is_demand_tech:
-                    continue
+        key_col = "FUEL" if param == "ReserveMarginTagFuel" else "TECHNOLOGY"
+        techs_by_param[param] = set(df[key_col].unique())
+        if param != "ReserveMarginTagFuel":
+            all_years.update(df["YEAR"].unique())
+
+    all_techs = set().union(*techs_by_param.values())
+
+    for tech in all_techs:
+        # is_demand_tech = tech.endswith("02")
+        is_demand_tech = tech.startswith("PWRTRN")
+        main_prefix = tech[0:3]
+
+        if tech not in tech_ids:
+            tech_ids[tech] = tech_counter
+            tech_counter += 1
+
+        for param in PARAMETERS:
+            if param not in og_data:
+                continue
+
+            df = og_data[param]
+            key_col = "FUEL" if param == "ReserveMarginTagFuel" else "TECHNOLOGY"
+            group = df[df[key_col] == tech]
+
+            if is_demand_tech and param in ["CapitalCost", "FixedCost", "ResidualCapacity"]:
+                target = demand_records
+            elif is_demand_tech:
+                continue
+            elif main_prefix in ["MIN", "RNW"]:
                 target = primary_records
-
-            if tech not in tech_ids:
-                tech_ids[tech] = tech_counter
-                tech_counter += 1
-
-            available_years = sorted(group["YEAR"].unique())
-            all_years.update(available_years)
-
-            year_values = {int(row["YEAR"]): row["VALUE"] for _, row in group.iterrows()}
-            values = [year_values.get(y, np.nan) for y in available_years]
-
-            non_nan_count = sum(pd.notna(values))
-            projection_mode = "EMPTY"
-            if non_nan_count == 0:
-                projection_mode = "EMPTY"
-            elif non_nan_count == 1 and not pd.isna(values[0]):
-                projection_mode = "Flat"
-            elif non_nan_count == len(values):
-                projection_mode = "User defined"
-            elif non_nan_count >= 2:
-                projection_mode = "interpolation"
+            else:
+                target = secondary_records
 
             record = {
                 "Tech.ID": tech_ids[tech],
@@ -416,18 +451,83 @@ def update_parametrization_primary_demand_techs(og_data, output_excel_path):
                 "Parameter.ID": PARAMETER_IDS[param],
                 "Parameter": param,
                 "Unit": None,
-                "Projection.Mode": projection_mode,
                 "Projection.Parameter": 0
             }
 
-            for y in available_years:
-                record[y] = year_values.get(y, np.nan)
+            if group.empty:
+                record["Projection.Mode"] = "EMPTY"
+                for y in all_years:
+                    record[int(y)] = float("nan")
+            else:
+                available_years = sorted(group["YEAR"].unique())
+                year_values = {int(row["YEAR"]): row["VALUE"] for _, row in group.iterrows()}
+                values = [year_values.get(y, float("nan")) for y in available_years]
+
+                non_nan_count = sum(pd.notna(values))
+                if non_nan_count == 0:
+                    mode = "EMPTY"
+                elif non_nan_count == 1 and not pd.isna(values[0]):
+                    mode = "Flat"
+                elif non_nan_count == len(values):
+                    mode = "User defined"
+                else:
+                    mode = "interpolation"
+
+                record["Projection.Mode"] = mode
+                for y in available_years:
+                    record[int(y)] = year_values.get(y, float("nan"))
 
             target.append(record)
 
     all_years = sorted(all_years)
     write_sheet("Primary Techs", primary_records, all_years, output_excel_path)
+    write_sheet("Secondary Techs", secondary_records, all_years, output_excel_path)
     write_sheet("Demand Techs", demand_records, all_years, output_excel_path)
+
+def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
+    """
+    Updates the 'GHGs' sheet in A-Xtra_Emissions.xlsx using EmissionActivityRatio data.
+    Keeps only one row per (TECHNOLOGY, EMISSION), taking the first available value.
+    """
+
+    if "EmissionActivityRatio" not in og_data:
+        print("[Warning] 'EmissionActivityRatio' not found in OG_Input_Data.")
+        return
+
+    df = og_data["EmissionActivityRatio"]
+
+    # Group by (TECHNOLOGY, EMISSION) and keep first value
+    grouped = (
+        df.groupby(["TECHNOLOGY", "EMISSION"], as_index=False)
+        .first()[["TECHNOLOGY", "EMISSION", "VALUE"]]
+        .rename(columns={
+            "TECHNOLOGY": "Tech",
+            "EMISSION": "Emission",
+            "VALUE": "EmissionActivityRatio"
+        })
+    )
+
+    # Add constant unit
+    grouped["Unit"] = "MtCO2eq/PJ"
+    grouped = grouped[["Tech", "Emission", "EmissionActivityRatio", "Unit"]]
+
+    # Ensure output folder exists
+    os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
+
+    # Load base Excel from input and write into output path
+    wb = load_workbook(input_excel_path)
+    ws = wb["GHGs"]
+    ws.delete_rows(1, ws.max_row)
+
+    from openpyxl.utils.dataframe import dataframe_to_rows
+    for row in dataframe_to_rows(grouped, index=False, header=True):
+        ws.append(row)
+
+    wb.save(output_excel_path)
+    print("[Success] Sheet 'GHGs' in Extra Emissions file updated.")
+
+
+
 
 
 #--------------------------------------------------------------------------------------------------#
@@ -484,6 +584,22 @@ def main():
     # except KeyError:
     #     print("Parameter not found in OG_Input_Data.")
 
+    try:
+        update_parametrization_yearsplit(
+            df=OG_Input_Data["YearSplit"],
+            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_Parametrization.xlsx")
+        )
+    except KeyError:
+        print("YearSplit not found in OG_Input_Data.")
+        
+    try:
+        update_xtra_emissions(
+            og_data=OG_Input_Data,
+            input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Emissions.xlsx"),
+            output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Emissions.xlsx")
+        )
+    except Exception as e:
+        print(f"Failed to update extra emissions file: {e}")
 
 
 if __name__ == "__main__":

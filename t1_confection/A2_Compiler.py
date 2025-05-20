@@ -36,41 +36,7 @@ for n in range( len( other_setup_params_name ) ):
 #
 print_aid_parameter = False
 #------------------------------------------------------------------------------
-print('1 - Define Yearsplit')
-#
-df_Yearsplit = pd.DataFrame( columns = Wide_Param_Header )
-# Initialize an empty list to accumulate dictionaries
-accumulated_dicts_Yearsplit = []
-
-if other_setup_params['Timeslice'] == 'Some' and other_setup_params_timeslices != []:
-    timeslices_list = other_setup_params_timeslices
-elif other_setup_params['Timeslice'] == 'Some' and other_setup_params_timeslices == []:
-    print('These variables have inconsistance variable xtra_scen/Timeslice and xtra_scen/Timeslices')
-    sys.exit()
-elif other_setup_params['Timeslice'] == 'All':
-    timeslices_list = [other_setup_params['Timeslice']]
-
-for ts in range(len(timeslices_list)):
-    # Loop through the time range vector
-    for y in range(len(time_range_vector)):
-        # Create a dictionary for the current iteration
-        this_dict_4_wide = {
-            'PARAMETER': 'YearSplit',
-            'Scenario': other_setup_params['Main_Scenario'],
-            'TIMESLICE': timeslices_list[ts],
-            'YEAR': time_range_vector[y],
-            'Value': 1
-        }
-        # Add the dictionary to the list
-        accumulated_dicts_Yearsplit.append(this_dict_4_wide)
-
-# Convert the accumulated list of dictionaries to a DataFrame
-new_rows_Yearsplit_df = pd.DataFrame(accumulated_dicts_Yearsplit)
-
-# Use pd.concat to append the new rows to the original DataFrame
-df_Yearsplit = pd.concat([df_Yearsplit, new_rows_Yearsplit_df], ignore_index=True)
-#------------------------------------------------------------------------------
-print('2 - Connect the model activity ratios.')
+print('1 - Connect the model activity ratios.')
 #
 AR_Model_Base_Year = pd.ExcelFile(params['A1_outputs'] + params['Print_Base_Year'])
 AR_Projections = pd.ExcelFile(params['A1_outputs'] + params['Print_Proj'])
@@ -291,10 +257,10 @@ df_IAR = pd.concat([df_IAR, pd.DataFrame(accumulated_rows_IAR)], ignore_index=Tr
 
 # HERE WE HAVE A FUNCTIONING IAR AND OAR FOR BOTH NEEDS: WIDE AND LONG FORMATS
 #
-print('2 (end) - The model has ben connected.')
+print('3 (end) - The model has ben connected.')
 #------------------------------------------------------------------------------
 # DEMAND
-print('3 - Process the model demand.')
+print('4 - Process the model demand.')
 
 Demand = pd.ExcelFile(params['A1_outputs'] + params['Print_Demand'])
 param_sheets = Demand.sheet_names # see all sheet names
@@ -459,7 +425,7 @@ if accumulated_rows_SpecDemandProfile:
     df_SpecDemandProfile = pd.concat([df_SpecDemandProfile, new_rows_SpecDemandProfile_df], ignore_index=True)
                                                                                                    
 
-print('4 - Parameterize technologies.')
+print('5 - Parameterize technologies.')
 # HERE WE HAVE A FUNCTIONING DEMAND *DF* // still have to add the wide format
 # ------------------------------------------------------------------------------
 # THIS SECTION ONLY PARAMETERIZES TECHNOLOGIES:
@@ -499,14 +465,13 @@ for s in range( len( param_sheets ) ):
 overall_param_df_dict = {}
 overall_param_df_dict.update( { 'InputActivityRatio':df_IAR } )
 overall_param_df_dict.update( { 'OutputActivityRatio':df_OAR } )
-overall_param_df_dict.update( { 'YearSplit':df_Yearsplit } )
 overall_param_df_dict.update( { 'SpecifiedAnnualDemand':df_SpecAnnualDemand } )
 overall_param_df_dict.update( { 'SpecifiedDemandProfile':df_SpecDemandProfile } )
 for p in range( len( overall_param_list ) ):
     if overall_param_list[p] != 'OutputActivityRatio':
         overall_param_df_dict.update( { overall_param_list[p]:pd.DataFrame( columns = Wide_Param_Header ) } )
 #*****************************************************************************
-print('4.a. - Capacity limits.')
+print('5.a. - Capacity limits.')
 # Let us do the capacity limits for the group technologies
 '''
 Description: this section changes the units from *Demand_df* in % to Gpkm for the modes of transport
@@ -586,7 +551,7 @@ else:
     timeslices_dict = []
 timeslices_list_check = timeslices_dict
 #
-print('4.b. - Remaining parameters.')
+print('5.b. - Remaining parameters.')
 for s in range( len( param_sheets ) ):
     params_dict.update( { param_sheets[s]:Parametrization.parse( param_sheets[s] ) } )
     this_df = params_dict[ param_sheets[s] ]
@@ -928,7 +893,7 @@ for s in range( len( param_sheets ) ):
                         #         accumulated_data[this_param] = []
                         #     accumulated_data[this_param].append(new_row)
             
-            else:
+            elif param_sheets[s] != 'Yearsplit':
                 for y in range(len(time_range_vector)):
                                          
                     # Prepare dictionary to accumulate data based on conditions
@@ -967,7 +932,62 @@ for param, rows in accumulated_data.items():
             overall_param_df_dict[param] = new_rows_df                                                                                  
 #
 #------------------------------------------------------------------------------
-print('5 - Include emissions.')
+print('6 - Define Yearsplit')
+#
+df_Yearsplit = pd.DataFrame( columns = Wide_Param_Header )
+# Initialize an empty list to accumulate dictionaries
+accumulated_dicts_Yearsplit = []
+
+if other_setup_params['Timeslice'] == 'Some' and other_setup_params_timeslices != []:
+    timeslices_list = other_setup_params_timeslices
+    this_df = params_dict[ 'Yearsplit' ]
+    
+    df_index_list = this_df.index.tolist()
+    #
+    for n in range( len( df_index_list ) ):
+        this_ts = this_df.loc[ n, 'Timeslices' ]
+
+        # Loop through the time range vector
+        for y in range(len(time_range_vector)):
+            # Create a dictionary for the current iteration
+            this_dict_4_wide = {
+                'PARAMETER': 'YearSplit',
+                'Scenario': other_setup_params['Main_Scenario'],
+                'TIMESLICE': this_ts,
+                'YEAR': time_range_vector[y],
+                'Value': deepcopy(this_df.loc[n, time_range_vector[y]])
+            }
+            # Add the dictionary to the list
+            accumulated_dicts_Yearsplit.append(this_dict_4_wide)
+    
+elif other_setup_params['Timeslice'] == 'Some' and other_setup_params_timeslices == []:
+    print('These variables have inconsistance variable xtra_scen/Timeslice and xtra_scen/Timeslices')
+    sys.exit()
+elif other_setup_params['Timeslice'] == 'All':
+    timeslices_list = [other_setup_params['Timeslice']]
+
+    for ts in range(len(timeslices_list)):
+        # Loop through the time range vector
+        for y in range(len(time_range_vector)):
+            # Create a dictionary for the current iteration
+            this_dict_4_wide = {
+                'PARAMETER': 'YearSplit',
+                'Scenario': other_setup_params['Main_Scenario'],
+                'TIMESLICE': timeslices_list[ts],
+                'YEAR': time_range_vector[y],
+                'Value': 1
+            }
+            # Add the dictionary to the list
+            accumulated_dicts_Yearsplit.append(this_dict_4_wide)
+
+# Convert the accumulated list of dictionaries to a DataFrame
+new_rows_Yearsplit_df = pd.DataFrame(accumulated_dicts_Yearsplit)
+
+# Use pd.concat to append the new rows to the original DataFrame
+df_Yearsplit = pd.concat([df_Yearsplit, new_rows_Yearsplit_df], ignore_index=True)
+overall_param_df_dict.update( { 'YearSplit':df_Yearsplit } )
+#------------------------------------------------------------------------------
+print('7 - Include emissions.')
 Emissions = pd.ExcelFile(params['A2_extra_inputs'] + params['Xtra_Emi'])
 # Emissions.sheet_names # see all sheet names // this only need thes wide format
 Emissions_ghg_df = Emissions.parse( params['GHGs'] )
@@ -1114,7 +1134,7 @@ for param, rows in accumulated_data_by_param.items():
 # %%
 #------------------------------------------------------------------------------
 if params['xtra_scen']['Timeslice'] == 'Some':
-    print('6 - Include Conversions parameters.')
+    print('7.a - Include Conversions parameters.')
     #
     df_Conversions = pd.DataFrame( columns = Wide_Param_Header )  
     accumulated_data_by_param_conversion = {}
