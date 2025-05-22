@@ -183,6 +183,14 @@ def parse_fuel_name(fuel):
 
     return ", ".join(name_parts)
 
+def assign_tech_type(tech):
+    if tech.startswith("MIN") or tech.startswith("RNW"):
+        return "Primary"
+    elif tech.startswith("PWRTRN"):
+        return "Demand"
+    else:
+        return "Secondary"
+
 #--------------------------------------------------------------------------------------------------#
 
 #-------------------------------------Updated intermediate functions-------------------------------#
@@ -308,8 +316,8 @@ def update_demand_demand_projection(df, output_excel_path, input_excel_path):
     wb.save(output_excel_path)
     print("[Success] Sheet 'Demand_Projection' in Demand file updated.")
 
-def update_parametrization_timeslices(df, output_excel_path):
-    """Updates Timeslices sheet in A-O_Parametrization.xlsx using CapacityFactor data."""
+def update_parametrization_capacities(df, output_excel_path):
+    """Updates Capacities sheet in A-O_Parametrization.xlsx using CapacityFactor data."""
     unique_years = sorted(df["YEAR"].unique())
     year_cols = [str(y) for y in unique_years]
 
@@ -346,16 +354,19 @@ def update_parametrization_timeslices(df, output_excel_path):
         "Parameter", "Unit", "Projection.Mode", "Projection.Parameter"
     ]
     df_cap = df_cap[fixed_cols + year_cols]
+    # Apply sorting: first by Tech alphabetically, then by Parameter.ID
+    df_cap = df_cap.sort_values(by=["Tech.ID", "Timeslices"], ascending=[True, True])
+
 
     wb = load_workbook(output_excel_path)
-    ws = wb["Timeslices"]
+    ws = wb["Capacities"]
     ws.delete_rows(1, ws.max_row)
 
     for row in dataframe_to_rows(df_cap, index=False, header=True):
         ws.append(row)
 
     wb.save(output_excel_path)
-    print("[Success] Sheet 'Timeslices' in Parametrization file updated.")
+    print("[Success] Sheet 'Capacities' in Parametrization file updated.")
 
 def update_parametrization_yearsplit(df, output_excel_path):
     """Updates Yearsplit sheet in A-O_Parametrization.xlsx using CapacityFactor data."""
@@ -400,8 +411,8 @@ def update_parametrization_yearsplit(df, output_excel_path):
 def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_excel_path, input_excel_path):
     """
     Updates the 'Fixed Horizon Parameters' sheet using CapacityToActivityUnit and OperationalLife data.
-    Ensures all technologies have entries for all expected parameters, filling with default value = 1.
-    Results are sorted by Tech (alphabetical) and then by Parameter.ID (numeric).
+    Applies parameter values, fills missing with default = 1, assigns Tech.Type based on naming rules.
+    Sorts results by Tech and Parameter.ID before writing to Excel.
     """
 
     PARAMETERS = [
@@ -427,7 +438,7 @@ def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_e
         for param_name, param_id, _ in PARAMETERS:
             value = param_data[param_name].get(tech, 1)
             output_rows.append({
-                "Tech.Type": "Primary",
+                "Tech.Type": assign_tech_type(tech),
                 "Tech.ID": tech_ids[tech],
                 "Tech": tech,
                 "Tech.Name": parse_tech_name(tech),
@@ -438,11 +449,8 @@ def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_e
             })
 
     df_fixed = pd.DataFrame(output_rows)
+    df_fixed = df_fixed.sort_values(by=["Tech", "Parameter.ID"])
 
-    # Apply sorting: first by Tech alphabetically, then by Parameter.ID
-    df_fixed = df_fixed.sort_values(by=["Tech", "Parameter.ID"], ascending=[True, True])
-
-    # Write to Excel
     wb = load_workbook(input_excel_path)
     ws = wb["Fixed Horizon Parameters"]
     ws.delete_rows(1, ws.max_row)
@@ -452,9 +460,15 @@ def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_e
 
     os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
     wb.save(output_excel_path)
-    print("[Success] Sheet 'Fixed Horizon Parameters' in Parametrization updated.")
+    print("[Success] Sheet 'Fixed Horizon Parameters' in Parametrization updated (with Tech.Type logic).")
 
-def update_parametrization_primary_demand_techs(og_data, output_excel_path):
+def update_parametrization_primary_secondary_demand_techs(og_data, output_excel_path):
+    """
+    Updates Primary, Secondary, and Demand Tech sheets using parameter data.
+    Tech type is determined by prefix. Naming logic is conditional:
+    - parse_tech_name for MIN, RNW, PWR, TRN
+    - parse_fuel_name otherwise
+    """
     PARAMETERS = [
         "CapitalCost", "FixedCost", "VariableCost", "ResidualCapacity",
         "TotalAnnualMaxCapacity", "TotalTechnologyAnnualActivityUpperLimit",
@@ -489,6 +503,12 @@ def update_parametrization_primary_demand_techs(og_data, output_excel_path):
             tech_ids[tech] = tech_counter
             tech_counter += 1
 
+        # Select naming function based on tech prefix
+        if main_prefix in ["MIN", "RNW", "PWR", "TRN"]:
+            tech_name = parse_tech_name(tech)
+        else:
+            tech_name = parse_fuel_name(tech)
+
         for param in PARAMETERS:
             if param not in og_data:
                 continue
@@ -509,7 +529,7 @@ def update_parametrization_primary_demand_techs(og_data, output_excel_path):
             record = {
                 "Tech.ID": tech_ids[tech],
                 "Tech": tech,
-                "Tech.Name": parse_tech_name(tech),
+                "Tech.Name": tech_name,
                 "Parameter.ID": PARAMETER_IDS[param],
                 "Parameter": param,
                 "Unit": None,
@@ -546,42 +566,42 @@ def update_parametrization_primary_demand_techs(og_data, output_excel_path):
     write_sheet("Secondary Techs", secondary_records, all_years, output_excel_path)
     write_sheet("Demand Techs", demand_records, all_years, output_excel_path)
 
+
+
 def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
     """
     Updates the 'GHGs' sheet in A-Xtra_Emissions.xlsx using EmissionActivityRatio data.
-    Keeps only one row per (TECHNOLOGY, EMISSION), taking the first available value.
+    Keeps only one row per (TECHNOLOGY, EMISSION, MODE_OF_OPERATION), taking the first available value.
+    Includes the Mode_Of_Operation column in the output.
     """
-
     if "EmissionActivityRatio" not in og_data:
         print("[Warning] 'EmissionActivityRatio' not found in OG_Input_Data.")
         return
 
     df = og_data["EmissionActivityRatio"]
 
-    # Group by (TECHNOLOGY, EMISSION) and keep first value
+    # Group by (TECHNOLOGY, EMISSION, MODE_OF_OPERATION) and take the first row
     grouped = (
-        df.groupby(["TECHNOLOGY", "EMISSION"], as_index=False)
-        .first()[["TECHNOLOGY", "EMISSION", "VALUE"]]
+        df.groupby(["TECHNOLOGY", "EMISSION", "MODE_OF_OPERATION"], as_index=False)
+        .first()[["TECHNOLOGY", "EMISSION", "MODE_OF_OPERATION", "VALUE"]]
         .rename(columns={
             "TECHNOLOGY": "Tech",
             "EMISSION": "Emission",
+            "MODE_OF_OPERATION": "Mode_Of_Operation",
             "VALUE": "EmissionActivityRatio"
         })
     )
 
     # Add constant unit
-    grouped["Unit"] = "MtCO2eq/PJ"
-    grouped = grouped[["Tech", "Emission", "EmissionActivityRatio", "Unit"]]
+    grouped["Unit"] = "MT"
+    grouped = grouped[["Mode_Of_Operation", "Tech", "Emission", "EmissionActivityRatio", "Unit"]]
 
-    # Ensure output folder exists
     os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
 
-    # Load base Excel from input and write into output path
     wb = load_workbook(input_excel_path)
     ws = wb["GHGs"]
     ws.delete_rows(1, ws.max_row)
 
-    from openpyxl.utils.dataframe import dataframe_to_rows
     for row in dataframe_to_rows(grouped, index=False, header=True):
         ws.append(row)
 
@@ -1045,12 +1065,12 @@ def update_parametrization(og_data, output_excel_path, input_excel_path):
         input_excel_path=input_excel_path
     )
 
-    update_parametrization_timeslices(
+    update_parametrization_capacities(
         df=og_data["CapacityFactor"],
         output_excel_path=output_excel_path
     )
 
-    update_parametrization_primary_demand_techs(
+    update_parametrization_primary_secondary_demand_techs(
         og_data=og_data,
         output_excel_path=output_excel_path
     )
