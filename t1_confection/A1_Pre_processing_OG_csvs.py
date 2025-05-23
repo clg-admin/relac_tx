@@ -1057,11 +1057,12 @@ def update_yaml_xtra_scen(og_data, yaml_path):
         "SEASON": "Season",
         "DAYTYPE": "DayType",
         "DAILYTIMEBRACKET": "DailyTimeBracket",
-        "TIMESLICE": "Timeslices"
+        "TIMESLICE": "Timeslices",
+        "STORAGE": "Storage"
     }
 
     # Parameters that must be strings in the YAML list
-    force_str_keys = {"Season", "DayType", "DailyTimeBracket", "Timeslices"}
+    force_str_keys = {"Season", "DayType", "DailyTimeBracket", "Timeslices", "Storage"}
 
     replacements = {}
     for og_key, yaml_key in key_map.items():
