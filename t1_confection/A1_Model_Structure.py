@@ -555,6 +555,8 @@ tech_param_list_yearly_secondary_df = pd.DataFrame(columns=tech_param_list_all_y
 tech_param_list_yearly_timeslices_df = pd.DataFrame(columns=tech_param_list_all_yearly_df_headers)
 tech_param_list_yearly_timeslices_df.insert(0, 'Timeslices', np.nan)
 #
+tech_param_list_yearly_capacities_df = deepcopy(tech_param_list_yearly_timeslices_df)
+#
 tech_param_list_yearly_demands_df = pd.DataFrame(columns=tech_param_list_all_yearly_df_headers)
 #
 tech_param_list_yearly_disttrn_df = pd.DataFrame(columns=tech_param_list_all_yearly_df_headers)
@@ -693,14 +695,26 @@ for n in range(len(codes_list_techs_primary)):
 
     # Second part: For yearly primary parameters
     for p in range(len(tech_param_list_primary)):
-        accumulated_rows_yearly_primary.append({
-            'Tech.ID': n + 1,
-            'Tech': codes_list_techs_primary[n],
-            'Tech.Name': primary_techs_names_eng[n],
-            'Parameter.ID': p + 1,
-            'Parameter': tech_param_list_primary[p],
-            'Projection.Parameter': 0  # Assuming this is a constant value for all rows
-        })
+        if tech_param_list_secondary[p] != 'CapacityFactor' and tech_param_list_secondary[p] != 'YearSplit' \
+            and params['xtra_scen']['Timeslice'] == 'Some':
+            accumulated_rows_yearly_primary.append({
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_primary[n],
+                'Tech.Name': primary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': tech_param_list_primary[p],
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
+            
+        elif tech_param_list_secondary[p] != 'YearSplit' and params['xtra_scen']['Timeslice'] == 'All':
+            accumulated_rows_yearly_primary.append({
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_primary[n],
+                'Tech.Name': primary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': tech_param_list_primary[p],
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
 
 # Convert the accumulated rows for all not yearly parameters into a DataFrame and concatenate
 new_rows_all_notyearly_df = pd.DataFrame(accumulated_rows_all_notyearly)
@@ -731,14 +745,25 @@ for n in range(len(codes_list_techs_secondary)):
 
     # For yearly secondary parameters
     for p in range(len(tech_param_list_secondary)):
-        accumulated_rows_yearly_secondary.append({
-            'Tech.ID': n + 1,
-            'Tech': codes_list_techs_secondary[n],
-            'Tech.Name': secondary_techs_names_eng[n],
-            'Parameter.ID': p + 1,
-            'Parameter': tech_param_list_secondary[p],
-            'Projection.Parameter': 0  # Assuming this is a constant value for all rows
-        })
+        if tech_param_list_secondary[p] != 'CapacityFactor' and tech_param_list_secondary[p] != 'YearSplit' \
+            and params['xtra_scen']['Timeslice'] == 'Some':
+            accumulated_rows_yearly_secondary.append({
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_secondary[n],
+                'Tech.Name': secondary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': tech_param_list_secondary[p],
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
+        elif tech_param_list_secondary[p] != 'YearSplit' and params['xtra_scen']['Timeslice'] == 'All':
+            accumulated_rows_yearly_secondary.append({
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_secondary[n],
+                'Tech.Name': secondary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': tech_param_list_secondary[p],
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
 
 # Convert the accumulated rows for all not yearly parameters into a DataFrame and concatenate
 new_rows_all_notyearly_secondary_df = pd.DataFrame(accumulated_rows_all_notyearly_secondary)
@@ -754,6 +779,7 @@ tech_param_list_yearly_secondary_df = pd.concat([tech_param_list_yearly_secondar
 # Initialize empty lists to accumulate rows
 accumulated_rows_all_notyearly_timeslices = []
 accumulated_rows_yearly_timeslices = []
+
 
 if params['xtra_scen']['Timeslice'] == 'Some':
 
@@ -793,6 +819,25 @@ if params['xtra_scen']['Timeslice'] == 'Some':
     # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
     new_rows_yearly_timeslices_df = pd.DataFrame(accumulated_rows_yearly_timeslices)
     tech_param_list_yearly_timeslices_df = pd.concat([tech_param_list_yearly_timeslices_df, new_rows_yearly_timeslices_df], ignore_index=True)
+#---------------------------------------------------------------------------------------------------#
+# YearSplit timeslices
+accumulated_rows_yearly_capacities = []
+if params['xtra_scen']['Timeslice'] == 'Some':
+    # For yearly secondary parameters
+    for p in range(len(tech_param_list_secondary)):
+        for ts in params['xtra_scen']['Timeslices']:
+            if tech_param_list_secondary[p] == 'YearSplit':
+            
+                accumulated_rows_yearly_capacities.append({
+                    'Timeslices': ts,
+                    'Parameter.ID': p + 1,
+                    'Parameter': tech_param_list_secondary[p],
+                    'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+                })
+                
+    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
+    new_rows_yearly_capacities_df = pd.DataFrame(accumulated_rows_yearly_capacities)
+    tech_param_list_yearly_capacities_df = pd.concat([tech_param_list_yearly_capacities_df, new_rows_yearly_capacities_df], ignore_index=True)
 #---------------------------------------------------------------------------------------------------#
 # Demand Techs (simple)
 
@@ -974,33 +1019,37 @@ for n in range( len( codes_list_techs_primary ) ):
 accumulated_rows_base_year = []
 accumulated_rows_projection = []
 
-# Loop through primary techs
-for n in range(len(codes_list_techs_primary)):
-    # Extract values for the current iteration
-    this_tech_names = primary_techs_names_eng[n]
-    this_fuel_o = codes_dict_techs_primary_output[codes_list_techs_primary[n]]
-    this_fuel_o_name_index = this_complete_fuel_o.index(this_fuel_o)
-    this_fuel_o_name = primary_o_fuels_names_eng[this_fuel_o_name_index]
-
-    # Append dictionaries for base year
-    accumulated_rows_base_year.append({
-        'Tech': codes_list_techs_primary[n],
-        'Tech.Name': this_tech_names,
-        'Fuel.O': this_fuel_o,
-        'Fuel.O.Name': this_fuel_o_name,
-        'Value.Fuel.O': 0  # This should be filled by the user
-    })
-
-    # Append dictionaries for projection
-    accumulated_rows_projection.append({
-        'Tech': codes_list_techs_primary[n],
-        'Tech.Name': this_tech_names,
-        'Fuel': this_fuel_o,
-        'Fuel.Name': this_fuel_o_name,
-        'Direction': 'Output',
-        'Projection.Mode': '',
-        'Projection.Parameter': ''  # This should be filled by the user
-    })
+# Loop through modes of operation
+for mo in params['xtra_scen']['Mode_of_Operation']:
+    # Loop through primary techs
+    for n in range(len(codes_list_techs_primary)):
+        # Extract values for the current iteration
+        this_tech_names = primary_techs_names_eng[n]
+        this_fuel_o = codes_dict_techs_primary_output[codes_list_techs_primary[n]]
+        this_fuel_o_name_index = this_complete_fuel_o.index(this_fuel_o)
+        this_fuel_o_name = primary_o_fuels_names_eng[this_fuel_o_name_index]
+    
+        # Append dictionaries for base year
+        accumulated_rows_base_year.append({
+            'Mode.Operation': mo,
+            'Tech': codes_list_techs_primary[n],
+            'Tech.Name': this_tech_names,
+            'Fuel.O': this_fuel_o,
+            'Fuel.O.Name': this_fuel_o_name,
+            'Value.Fuel.O': 0  # This should be filled by the user
+        })
+    
+        # Append dictionaries for projection
+        accumulated_rows_projection.append({
+            'Mode.Operation': mo,
+            'Tech': codes_list_techs_primary[n],
+            'Tech.Name': this_tech_names,
+            'Fuel': this_fuel_o,
+            'Fuel.Name': this_fuel_o_name,
+            'Direction': 'Output',
+            'Projection.Mode': '',
+            'Projection.Parameter': ''  # This should be filled by the user
+        })
 
 # Convert the accumulated rows into DataFrames
 new_rows_base_year_df = pd.DataFrame(accumulated_rows_base_year)
@@ -1042,40 +1091,45 @@ for n in range(len(codes_list_techs_secondary)):
     this_fuel_o = codes_dict_techs_secondary_output[codes_list_techs_secondary[n]]
     this_fuel_o_name_index = this_complete_fuel_o.index(this_fuel_o)
     this_fuel_o_name = secondary_o_fuels_names_eng[this_fuel_o_name_index]
-
-    # Accumulate rows for base year
-    accumulated_rows_secondary_base_year.append({
-        'Fuel.I': this_fuel_i,
-        'Fuel.I.Name': this_fuel_i_name,
-        'Value.Fuel.I': 0,  # This should be filled by the user
-        'Tech': codes_list_techs_secondary[n],
-        'Tech.Name': this_tech_names,
-        'Fuel.O': this_fuel_o,
-        'Fuel.O.Name': this_fuel_o_name,
-        'Value.Fuel.O': 0  # This should be filled by the user
-    })
-
-    # Accumulate rows for projection (Input)
-    accumulated_rows_secondary_projection.append({
-        'Tech': codes_list_techs_secondary[n],
-        'Tech.Name': this_tech_names,
-        'Fuel': this_fuel_i,
-        'Fuel.Name': this_fuel_i_name,
-        'Direction': 'Input',
-        'Projection.Mode': '',
-        'Projection.Parameter': 0  # This should be filled by the user
-    })
-
-    # Accumulate rows for projection (Output)
-    accumulated_rows_secondary_projection.append({
-        'Tech': codes_list_techs_secondary[n],
-        'Tech.Name': this_tech_names,
-        'Fuel': this_fuel_o,
-        'Fuel.Name': this_fuel_o_name,
-        'Direction': 'Output',
-        'Projection.Mode': '',
-        'Projection.Parameter': 0  # This should be filled by the user
-    })
+    
+    # Loop through modes of operation
+    for mo in params['xtra_scen']['Mode_of_Operation']:
+        # Accumulate rows for base year
+        accumulated_rows_secondary_base_year.append({
+            'Mode.Operation': mo,
+            'Fuel.I': this_fuel_i,
+            'Fuel.I.Name': this_fuel_i_name,
+            'Value.Fuel.I': 0,  # This should be filled by the user
+            'Tech': codes_list_techs_secondary[n],
+            'Tech.Name': this_tech_names,
+            'Fuel.O': this_fuel_o,
+            'Fuel.O.Name': this_fuel_o_name,
+            'Value.Fuel.O': 0  # This should be filled by the user
+        })
+    
+        # Accumulate rows for projection (Input)
+        accumulated_rows_secondary_projection.append({
+            'Mode.Operation': mo,
+            'Tech': codes_list_techs_secondary[n],
+            'Tech.Name': this_tech_names,
+            'Fuel': this_fuel_i,
+            'Fuel.Name': this_fuel_i_name,
+            'Direction': 'Input',
+            'Projection.Mode': '',
+            'Projection.Parameter': 0  # This should be filled by the user
+        })
+    
+        # Accumulate rows for projection (Output)
+        accumulated_rows_secondary_projection.append({
+            'Mode.Operation': mo,
+            'Tech': codes_list_techs_secondary[n],
+            'Tech.Name': this_tech_names,
+            'Fuel': this_fuel_o,
+            'Fuel.Name': this_fuel_o_name,
+            'Direction': 'Output',
+            'Projection.Mode': '',
+            'Projection.Parameter': 0  # This should be filled by the user
+        })
 
 # Convert the accumulated rows into DataFrames
 new_rows_secondary_base_year_df = pd.DataFrame(accumulated_rows_secondary_base_year)
@@ -1115,53 +1169,58 @@ for n in range(len(codes_list_techs_demands)):
     this_fuel_o = codes_dict_techs_demands_output[codes_list_techs_demands[n]]
     this_fuel_o_name_index = demands_simple.index(this_fuel_o)
     this_fuel_o_name = demands_simple_eng[this_fuel_o_name_index]
-
-    # Accumulate rows for base year
-    accumulated_rows_demand_base_year.append({
-        'Fuel.I': this_fuel_i,
-        'Fuel.I.Name': this_fuel_i_name,
-        'Value.Fuel.I': 0,  # This should be filled by the user
-        'Tech': techs_demand_simple[n],
-        'Tech.Name': this_tech_names,
-        'Fuel.O': this_fuel_o,
-        'Fuel.O.Name': this_fuel_o_name,
-        'Value.Fuel.O': 0  # This should be filled by the user
-    })
-
-    # Accumulate rows for projection (Input and Output)
-    accumulated_rows_demand_projection.extend([
-        {
+    
+    # Loop through modes of operation
+    for mo in params['xtra_scen']['Mode_of_Operation']:
+        # Accumulate rows for base year
+        accumulated_rows_demand_base_year.append({
+            'Mode.Operation': mo,
+            'Fuel.I': this_fuel_i,
+            'Fuel.I.Name': this_fuel_i_name,
+            'Value.Fuel.I': 0,  # This should be filled by the user
             'Tech': techs_demand_simple[n],
             'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_i,
-            'Fuel.Name': this_fuel_i_name,
-            'Direction': 'Input',
+            'Fuel.O': this_fuel_o,
+            'Fuel.O.Name': this_fuel_o_name,
+            'Value.Fuel.O': 0  # This should be filled by the user
+        })
+    
+        # Accumulate rows for projection (Input and Output)
+        accumulated_rows_demand_projection.extend([
+            {
+                'Mode.Operation': mo,
+                'Tech': techs_demand_simple[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_i,
+                'Fuel.Name': this_fuel_i_name,
+                'Direction': 'Input',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # This should be filled by the user
+            },
+            {
+                'Mode.Operation': mo,                                                         
+                'Tech': techs_demand_simple[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_o,
+                'Fuel.Name': this_fuel_o_name,
+                'Direction': 'Output',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # This should be filled by the user
+            }
+        ])
+    
+        # Accumulate rows for demands all
+        accumulated_rows_demands_all.append({
+            'Ref.Cap.BY': 'not needed',
+            'Ref.OAR.BY': 'not needed',
+            'Ref.km.BY': 'not needed',
+            'Demand/Share': 'Demand',
+            'Fuel/Tech': this_fuel_o,
+            'Name': this_fuel_o_name,
             'Projection.Mode': '',
-            'Projection.Parameter': 0  # This should be filled by the user
-        },
-        {
-                                                                      
-            'Tech': techs_demand_simple[n],
-            'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_o,
-            'Fuel.Name': this_fuel_o_name,
-            'Direction': 'Output',
-            'Projection.Mode': '',
-            'Projection.Parameter': 0  # This should be filled by the user
-        }
-    ])
-
-    # Accumulate rows for demands all
-    accumulated_rows_demands_all.append({
-        'Ref.Cap.BY': 'not needed',
-        'Ref.OAR.BY': 'not needed',
-        'Ref.km.BY': 'not needed',
-        'Demand/Share': 'Demand',
-        'Fuel/Tech': this_fuel_o,
-        'Name': this_fuel_o_name,
-        'Projection.Mode': '',
-        'Projection.Parameter': 0
-    })
+            'Projection.Parameter': 0
+        })
+        
     if params['xtra_scen']['Timeslice'] == 'Some':
         for ts in params['xtra_scen']['Timeslices']:
             # Accumulate rows for demands all
@@ -1218,41 +1277,45 @@ for n in range(len(codes_list_techs_DISTTRN)):
     this_fuel_o = codes_list_techs_DISTTRN_output[codes_list_techs_DISTTRN[n]]
     this_fuel_o_name_index = sp_trn_fuel_dist.index(this_fuel_o)  # Assume index finding is correct
     this_fuel_o_name = sp_trn_fuel_dist_eng[this_fuel_o_name_index]
-
-    # Accumulate rows for base year
-    accumulated_rows_DISTTRN_base_year.append({
-        'Fuel.I': this_fuel_i,
-        'Fuel.I.Name': this_fuel_i_name,
-        'Value.Fuel.I': 0,  # This should be filled by the user
-        'Tech': codes_list_techs_DISTTRN[n],
-        'Tech.Name': this_tech_names,
-        'Fuel.O': this_fuel_o,
-        'Fuel.O.Name': this_fuel_o_name,
-        'Value.Fuel.O': 0  # This should be filled by the user
-    })
-
-    # Accumulate rows for projection (Input and Output)
-    accumulated_rows_DISTTRN_projection.extend([
-        {
+    
+    # Loop through modes of operation
+    for mo in params['xtra_scen']['Mode_of_Operation']:
+        # Accumulate rows for base year
+        accumulated_rows_DISTTRN_base_year.append({
+            'Mode.Operation': mo,
+            'Fuel.I': this_fuel_i,
+            'Fuel.I.Name': this_fuel_i_name,
+            'Value.Fuel.I': 0,  # This should be filled by the user
             'Tech': codes_list_techs_DISTTRN[n],
             'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_i,
-            'Fuel.Name': this_fuel_i_name,
-            'Direction': 'Input',
-            'Projection.Mode': '',
-            'Projection.Parameter': 0  # This should be filled by the user
-        },
-        {
-                                                                        
-            'Tech': codes_list_techs_DISTTRN[n],
-            'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_o,
-            'Fuel.Name': this_fuel_o_name,
-            'Direction': 'Output',
-            'Projection.Mode': '',
-            'Projection.Parameter': 0  # This should be filled by the user
-        }
-    ])
+            'Fuel.O': this_fuel_o,
+            'Fuel.O.Name': this_fuel_o_name,
+            'Value.Fuel.O': 0  # This should be filled by the user
+        })
+    
+        # Accumulate rows for projection (Input and Output)
+        accumulated_rows_DISTTRN_projection.extend([
+            {
+                'Mode.Operation': mo,
+                'Tech': codes_list_techs_DISTTRN[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_i,
+                'Fuel.Name': this_fuel_i_name,
+                'Direction': 'Input',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # This should be filled by the user
+            },
+            {
+                'Mode.Operation': mo,
+                'Tech': codes_list_techs_DISTTRN[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_o,
+                'Fuel.Name': this_fuel_o_name,
+                'Direction': 'Output',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # This should be filled by the user
+            }
+        ])
 
 # Convert the accumulated rows into DataFrames
 new_rows_DISTTRN_base_year_df = pd.DataFrame(accumulated_rows_DISTTRN_base_year)
@@ -1300,54 +1363,60 @@ for n in range(len(codes_list_techs_TRN)):
     this_fuel_o = codes_list_techs_TRN_output[codes_list_techs_TRN[n]]
     this_fuel_o_name = ''  # Placeholder for output fuel name, to be completed later
 
-    # Accumulate rows for base year
-    accumulated_rows_TRN_base_year.append({
-        'Fuel.I.1': this_fuel_i_1,
-        'Fuel.I.1.Name': this_fuel_i_1_name,
-        'Value.Fuel.I.1': 0,  # This should be filled by the user
-        'Fuel.I.2': this_fuel_i_2,
-        'Fuel.I.2.Name': this_fuel_i_2_name,
-        'Value.Fuel.I.2': 0,  # This should be filled by the user
-        'Tech': codes_list_techs_TRN[n],
-        'Tech.Name': this_tech_names,
-        'Fuel.O': this_fuel_o,
-        'Fuel.O.Name': this_fuel_o_name,
-        'Value.Fuel.O': 0  # This should be filled by the user
-    })
-
-    # Accumulate rows for projection (Input for both fuels and Output)
-    accumulated_rows_TRN_projection.append({
-        'Tech': codes_list_techs_TRN[n],
-        'Tech.Name': this_tech_names,
-        'Fuel': this_fuel_i_1,
-        'Fuel.Name': this_fuel_i_1_name,
-        'Direction': 'Input',
-        'Projection.Mode': '',
-        'Projection.Parameter': 0  # This should be filled by the user
-    })
-
-    # Additional input fuel (if exists)
-    if len(this_fuel_i) > 1:
-        accumulated_rows_TRN_projection.append({
+    # Loop through modes of operation
+    for mo in params['xtra_scen']['Mode_of_Operation']:
+        # Accumulate rows for base year
+        accumulated_rows_TRN_base_year.append({
+            'Mode.Operation': mo,
+            'Fuel.I.1': this_fuel_i_1,
+            'Fuel.I.1.Name': this_fuel_i_1_name,
+            'Value.Fuel.I.1': 0,  # This should be filled by the user
+            'Fuel.I.2': this_fuel_i_2,
+            'Fuel.I.2.Name': this_fuel_i_2_name,
+            'Value.Fuel.I.2': 0,  # This should be filled by the user
             'Tech': codes_list_techs_TRN[n],
             'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_i_2,
-            'Fuel.Name': this_fuel_i_2_name,
+            'Fuel.O': this_fuel_o,
+            'Fuel.O.Name': this_fuel_o_name,
+            'Value.Fuel.O': 0  # This should be filled by the user
+        })
+    
+        # Accumulate rows for projection (Input for both fuels and Output)
+        accumulated_rows_TRN_projection.append({
+            'Mode.Operation': mo,
+            'Tech': codes_list_techs_TRN[n],
+            'Tech.Name': this_tech_names,
+            'Fuel': this_fuel_i_1,
+            'Fuel.Name': this_fuel_i_1_name,
             'Direction': 'Input',
             'Projection.Mode': '',
             'Projection.Parameter': 0  # This should be filled by the user
         })
-
-    # Output fuel
-    accumulated_rows_TRN_projection.append({
-        'Tech': codes_list_techs_TRN[n],
-        'Tech.Name': this_tech_names,
-        'Fuel': this_fuel_o,
-        'Fuel.Name': this_fuel_o_name,
-        'Direction': 'Output',
-        'Projection.Mode': '',
-        'Projection.Parameter': 0  # This should be filled by the user
-    })
+    
+        # Additional input fuel (if exists)
+        if len(this_fuel_i) > 1:
+            accumulated_rows_TRN_projection.append({
+                'Mode.Operation': mo,
+                'Tech': codes_list_techs_TRN[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_i_2,
+                'Fuel.Name': this_fuel_i_2_name,
+                'Direction': 'Input',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # This should be filled by the user
+            })
+    
+        # Output fuel
+        accumulated_rows_TRN_projection.append({
+            'Mode.Operation': mo,
+            'Tech': codes_list_techs_TRN[n],
+            'Tech.Name': this_tech_names,
+            'Fuel': this_fuel_o,
+            'Fuel.Name': this_fuel_o_name,
+            'Direction': 'Output',
+            'Projection.Mode': '',
+            'Projection.Parameter': 0  # This should be filled by the user
+        })
 
 # Convert the accumulated rows into DataFrames
 new_rows_TRN_base_year_df = pd.DataFrame(accumulated_rows_TRN_base_year)
@@ -1388,40 +1457,44 @@ for n in range(len(codes_list_techs_TRNGROUP)):
     this_fuel_o_name_index = sp_trn_dem_to_code_Code.index(this_fuel_o)
     this_fuel_o_name = sp_trn_dem_to_code_names_eng[this_fuel_o_name_index]
 
-    # Accumulate rows for base year
-    accumulated_rows_TRNGROUP_base_year.append({
-        'Fuel.I': this_fuel_i,
-        'Fuel.I.Name': this_fuel_i_name,
-        'Value.Fuel.I': 0,  # Placeholder for user to fill
-        'Tech': codes_list_techs_TRNGROUP[n],
-        'Tech.Name': this_tech_names,
-        'Fuel.O': this_fuel_o,
-        'Fuel.O.Name': this_fuel_o_name,
-        'Value.Fuel.O': 0  # Placeholder for user to fill
-    })
-
-    # Accumulate rows for projection (Input and Output)
-    accumulated_rows_TRNGROUP_projection.extend([
-        {
+    # Loop through modes of operation
+    for mo in params['xtra_scen']['Mode_of_Operation']:
+        # Accumulate rows for base year
+        accumulated_rows_TRNGROUP_base_year.append({
+            'Mode.Operation': mo,
+            'Fuel.I': this_fuel_i,
+            'Fuel.I.Name': this_fuel_i_name,
+            'Value.Fuel.I': 0,  # Placeholder for user to fill
             'Tech': codes_list_techs_TRNGROUP[n],
             'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_i,
-            'Fuel.Name': this_fuel_i_name,
-            'Direction': 'Input',
-            'Projection.Mode': '',
-            'Projection.Parameter': 0  # Placeholder for user to fill
-        },
-        {
-                                                                          
-            'Tech': codes_list_techs_TRNGROUP[n],
-            'Tech.Name': this_tech_names,
-            'Fuel': this_fuel_o,
-            'Fuel.Name': this_fuel_o_name,
-            'Direction': 'Output',
-            'Projection.Mode': '',
-            'Projection.Parameter': 0  # Placeholder for user to fill
-        }
-    ])
+            'Fuel.O': this_fuel_o,
+            'Fuel.O.Name': this_fuel_o_name,
+            'Value.Fuel.O': 0  # Placeholder for user to fill
+        })
+    
+        # Accumulate rows for projection (Input and Output)
+        accumulated_rows_TRNGROUP_projection.extend([
+            {
+                'Mode.Operation': mo,
+                'Tech': codes_list_techs_TRNGROUP[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_i,
+                'Fuel.Name': this_fuel_i_name,
+                'Direction': 'Input',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # Placeholder for user to fill
+            },
+            {
+                'Mode.Operation': mo,
+                'Tech': codes_list_techs_TRNGROUP[n],
+                'Tech.Name': this_tech_names,
+                'Fuel': this_fuel_o,
+                'Fuel.Name': this_fuel_o_name,
+                'Direction': 'Output',
+                'Projection.Mode': '',
+                'Projection.Parameter': 0  # Placeholder for user to fill
+            }
+        ])
 
     # Check and add to demands list if not already present
     if this_fuel_o not in accumulated_demands_fuel_list:
@@ -1477,7 +1550,8 @@ tech_param_list_all_notyearly_df = tech_param_list_all_notyearly_df.replace(np.n
 #
 tech_param_list_yearly_primary_df = tech_param_list_yearly_primary_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_secondary_df = tech_param_list_yearly_secondary_df.replace(np.nan, '', regex=True)
-tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)                                                                                                                                                                                                                       
+tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)
+tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)                                                                                                                                                                                                                       
 tech_param_list_yearly_demands_df = tech_param_list_yearly_demands_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_disttrn_df = tech_param_list_yearly_disttrn_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_trn_df = tech_param_list_yearly_trn_df.replace(np.nan, '', regex=True)
@@ -1490,8 +1564,10 @@ if params['xtra_scen']['Timeslice'] == 'All':
                             tech_param_list_yearly_trn_df, tech_param_list_yearly_trngroups_df ]
 else:
     tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)
+    tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)
     tech_param_list_dfs = [ tech_param_list_all_notyearly_df, tech_param_list_yearly_primary_df ,
-                            tech_param_list_yearly_secondary_df, tech_param_list_yearly_timeslices_df, 
+                            tech_param_list_yearly_secondary_df, tech_param_list_yearly_timeslices_df,
+                            tech_param_list_yearly_capacities_df,
                             tech_param_list_yearly_demands_df , tech_param_list_yearly_disttrn_df, 
                             tech_param_list_yearly_trn_df, tech_param_list_yearly_trngroups_df ]
 tech_param_list_dfs_names = params['tech_param_list_dfs_names']

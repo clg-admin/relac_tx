@@ -165,8 +165,8 @@ Pickle_Fleet_Groups_T2D: '/A-O_Fleet_Groups_T2D.pickle'
 # Years variables
 #----------------------------------------------------------------------------------#
 # Base year
-base_year: 2018
-initial_year: 2018
+base_year: 2021
+initial_year: 2021
 
 # Final year
 final_year: 2050
@@ -223,14 +223,14 @@ dict_dist_fam_to_name_spa: {
 #---------------------------------------------------------------#
 xtra_scen: {
   Main_Scenario: 'BAU',
-  Other_Scenarios: ['NDCincond','NDCcond'],
-  Region: 'CR',
-  Mode_of_Operation: 1,
-  Season: [1,2,3], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  Other_Scenarios: ['NDC'],
+  Region: 'GLOBAL',
+  Mode_of_Operation: [1,2],
+  Season: [1,2], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   DayType: [1], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   DailyTimeBracket: [1,2], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   Timeslice: 'Some',
-  Timeslices: ['DRY', 'RAIN'],
+  Timeslices: ['S1D1', 'S1D2', 'S2D1', 'S2D2'],
   }
 
 # Remember the values of the "Conversionls", "Conversionld" and "Conversionlh"
@@ -264,7 +264,8 @@ tech_param_list_primary: [
   'TotalTechnologyAnnualActivityUpperLimit',
   'TotalTechnologyAnnualActivityLowerLimit',
   'TotalAnnualMinCapacityInvestment',
-  'CapacityFactor', 'AvailabilityFactor'
+  'AvailabilityFactor', 'CapacityFactor',
+  'YearSplit'
   ]
 tech_param_list_secondary: [
   'CapitalCost', 'FixedCost', 'VariableCost', 
@@ -272,7 +273,8 @@ tech_param_list_secondary: [
   'TotalTechnologyAnnualActivityUpperLimit',
   'TotalTechnologyAnnualActivityLowerLimit',
   'TotalAnnualMinCapacityInvestment',
-  'CapacityFactor', 'AvailabilityFactor'
+  'AvailabilityFactor', 'CapacityFactor',
+  'YearSplit'
   ]
 
 tech_param_list_demands: [
@@ -314,76 +316,76 @@ df_demands_all_header: [
 
 # A: primary technologies
 df_techs_primary_base_year_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
   'Value.Fuel.O', 'Unit.Fuel.O'
   ]
 
 df_techs_primary_projection_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
   'Direction', 'Projection.Mode', 'Projection.Parameter' ]
 
 # B: secondary technologies
 df_techs_secondary_base_year_HEADER: [
-  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
   'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
   'Value.Fuel.O', 'Unit.Fuel.O'
   ]
 
 df_techs_secondary_projection_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name', 'Direction',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name', 'Direction',
   'Projection.Mode', 'Projection.Parameter'
   ]
 
 # C: Simple methods
 df_techs_demand_base_year_HEADER: [
-  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
   'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
   'Value.Fuel.O', 'Unit.Fuel.O'
   ]
 
 df_techs_demand_projection_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
   'Direction', 'Projection.Mode', 'Projection.Parameter' ]
 
 # D: Fuel distribution elements of transport
 df_techs_DISTTRN_base_year_HEADER: [
-  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
   'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
   'Value.Fuel.O', 'Unit.Fuel.O'
   ]
 
 df_techs_DISTTRN_projection_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
   'Direction', 'Projection.Mode', 'Projection.Parameter' ]
 
 # E: Vehicle technologies
 df_techs_TRN_base_year_HEADER: [
-  'Fuel.I.1', 'Fuel.I.1.Name', 'Value.Fuel.I.1', 'Unit.Fuel.I.1',
+  'Mode.Operation', 'Fuel.I.1', 'Fuel.I.1.Name', 'Value.Fuel.I.1', 'Unit.Fuel.I.1',
   'Fuel.I.2', 'Fuel.I.2.Name', 'Value.Fuel.I.2', 'Unit.Fuel.I.2',
   'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O',
   'Unit.Fuel.O'
   ]
 
 df_techs_TRN_projection_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
   'Direction', 'Projection.Mode', 'Projection.Parameter' ]
 
 # F: Group vehicle technologies
 df_techs_TRNGROUP_base_year_HEADER: [
-  'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
+  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
   'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
   'Value.Fuel.O', 'Unit.Fuel.O'
   ]
 
 df_techs_TRNGROUP_projection_HEADER: [
-  'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
   'Direction', 'Projection.Mode', 'Projection.Parameter'
   ]
 
 tech_param_list_dfs_names: [
   'Fixed Horizon Parameters', 'Primary Techs', 'Secondary Techs', 
-  'Timeslices', 'Demand Techs', 'Transport Fuel Distribution',
-  'Vehicle Techs', 'Vehicle Groups'
+  'Capacities', 'Yearsplit', 'Demand Techs', 
+  'Transport Fuel Distribution', 'Vehicle Techs', 'Vehicle Groups'
   ]
 #---------------------------------------------------------------#
 
