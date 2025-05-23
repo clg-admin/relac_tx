@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 import numpy as np
 from openpyxl import load_workbook
@@ -460,7 +461,7 @@ def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_e
 
     os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
     wb.save(output_excel_path)
-    print("[Success] Sheet 'Fixed Horizon Parameters' in Parametrization updated (with Tech.Type logic).")
+    print("[Success] Sheet 'Fixed Horizon Parameters' in Parametrization updated.")
 
 def update_parametrization_primary_secondary_demand_techs(og_data, output_excel_path):
     """
@@ -853,7 +854,7 @@ def update_projection_primary(og_data, workbook):
     for r in dataframe_to_rows(df_final, index=False, header=True):
         ws.append(r)
 
-    print("[Success] Sheet 'Primary' in Projections file updated (years adapted).")
+    print("[Success] Sheet 'Primary' in Projections file updated.")
     
 def update_projection_secondary(og_data, workbook):
     """
@@ -925,7 +926,7 @@ def update_projection_secondary(og_data, workbook):
     for r in dataframe_to_rows(df_final, index=False, header=True):
         ws.append(r)
 
-    print("[Success] Sheet 'Secondary' in Projections file updated (years adapted).")
+    print("[Success] Sheet 'Secondary' in Projections file updated.")
 
 def update_projection_demand_techs(og_data, workbook):
     """
@@ -999,7 +1000,150 @@ def update_projection_demand_techs(og_data, workbook):
     for r in dataframe_to_rows(df_final, index=False, header=True):
         ws.append(r)
 
-    print("[Success] Sheet 'Demand Techs' in Projections file updated (sorted by Tech and Direction).")
+    print("[Success] Sheet 'Demand Techs' in Projections file updated.")
+    
+def update_yaml_conversions(og_data, yaml_path):
+    """
+    Updates Conversionls, Conversionld, Conversionlh values in a YAML file using OG_Input_Data.
+    Replaces the lists while preserving inline comments and formatting.
+    """
+    params = ["Conversionls", "Conversionld", "Conversionlh"]
+
+    # Extract values from OG_Input_Data
+    replacements = {}
+    for param in params:
+        if param in og_data:
+            values = og_data[param]["VALUE"].astype(int).tolist()
+            replacements[param] = values
+        else:
+            print(f"[Warning] {param} not found in OG_Input_Data.")
+
+    # Read the YAML file as plain text
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Update each conversion line by pattern
+    updated_lines = []
+    for line in lines:
+        matched = False
+        for param in params:
+            pattern = rf"^({param}:\s*)\[[^\]]*\](\s*#.*)$"
+            match = re.match(pattern, line)
+            if match:
+                prefix, suffix = match.groups()
+                new_list = ", ".join(map(str, replacements.get(param, [])))
+                line = f"{prefix}[{new_list}]{suffix}\n"
+                matched = True
+                break
+        updated_lines.append(line if not matched else line)
+
+    # Write the updated YAML content back
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        f.writelines(updated_lines)
+
+    print("[Success] Lists: 'Conversionls', 'Conversionlh' and 'Conversionld'\n in MOMF_T1_A file updated.")
+
+def update_yaml_xtra_scen(og_data, yaml_path):
+    """
+    Updates the xtra_scen block of a YAML file using mapped keys from OG_Input_Data.
+    Replaces only the values (inside [] or '') in the corresponding xtra_scen lines.
+    Preserves formatting and comments.
+    """
+
+    # Mapping of OG_Input_Data keys to xtra_scen keys
+    key_map = {
+        "REGION": "Region",
+        "MODE_OF_OPERATION": "Mode_of_Operation",
+        "SEASON": "Season",
+        "DAYTYPE": "DayType",
+        "DAILYTIMEBRACKET": "DailyTimeBracket",
+        "TIMESLICE": "Timeslices"
+    }
+
+    # Parameters that must be strings in the YAML list
+    force_str_keys = {"Season", "DayType", "DailyTimeBracket", "Timeslices"}
+
+    replacements = {}
+    for og_key, yaml_key in key_map.items():
+        if og_key in og_data:
+            values = og_data[og_key]["VALUE"].tolist()
+            if yaml_key == "Region":
+                replacements[yaml_key] = str(values[0]) if values else ""
+            else:
+                if yaml_key in force_str_keys:
+                    replacements[yaml_key] = [f"'{str(v)}'" for v in values]
+                else:
+                    replacements[yaml_key] = [int(v) if isinstance(v, (int, float)) else str(v) for v in values]
+
+    # Read YAML as plain text lines
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    updated_lines = []
+    for line in lines:
+        updated = False
+        for yaml_key, new_values in replacements.items():
+            if yaml_key == "Region":
+                pattern = rf"^(\s*{yaml_key}:\s*)'(.*?)'(.*)$"
+                match = re.match(pattern, line)
+                if match:
+                    prefix, _, suffix = match.groups()
+                    line = f"{prefix}'{new_values}'{suffix}\n"
+                    updated = True
+                    break
+            else:
+                pattern = rf"^(\s*{yaml_key}:\s*)\[[^\]]*\](.*)$"
+                match = re.match(pattern, line)
+                if match:
+                    prefix, suffix = match.groups()
+                    formatted = ", ".join(map(str, new_values))
+                    line = f"{prefix}[{formatted}]{suffix}\n"
+                    updated = True
+                    break
+        updated_lines.append(line)
+
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        f.writelines(updated_lines)
+
+    print("[Success] Dict 'xtra_scen' in MOMF_T1_A file updated.")
+
+def update_yaml_years(og_data, yaml_path):
+    """
+    Updates the base_year, initial_year, and final_year fields in the YAML file
+    based on the first and last YEAR value found in the OG_Input_Data dictionary.
+    Properly clears and replaces quoted year values.
+    """
+
+    if "YEAR" not in og_data or "VALUE" not in og_data["YEAR"].columns:
+        print("[Warning] 'YEAR' parameter with column 'VALUE' not found in OG_Input_Data.")
+        return
+
+    years = sorted(og_data["YEAR"]["VALUE"].unique())
+    if not years:
+        print("[Warning] YEAR data is empty.")
+        return
+
+    base_year = str(int(years[0]))
+    final_year = str(int(years[-1]))
+
+    # Read YAML as plain text
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    updated_lines = []
+    for line in lines:
+        if "base_year:" in line:
+            line = re.sub(r"(base_year:\s*)['\"].*?['\"]", rf"\1'{base_year}'", line)
+        elif "initial_year:" in line:
+            line = re.sub(r"(initial_year:\s*)['\"].*?['\"]", rf"\1'{base_year}'", line)
+        elif "final_year:" in line:
+            line = re.sub(r"(final_year:\s*)['\"].*?['\"]", rf"\1'{final_year}'", line)
+        updated_lines.append(line)
+
+    with open(yaml_path, "w", encoding="utf-8") as f:
+        f.writelines(updated_lines)
+
+    print("[Success] YAML years variables in MOMF_T1_A file updated.")
 #--------------------------------------------------------------------------------------------------#
 
 #-------------------------------------Updated main functions---------------------------------------#
@@ -1101,6 +1245,22 @@ def update_projections(og_data, input_excel_path, output_excel_path):
     print("[Success] Excel file 'Projections' updated.")
     print("-------------------------------------------------------------------------\n")
 
+def update_yaml_structure(og_data, yaml_path):
+    """
+    Executes YAML updates using OG_Input_Data:
+    - Updates Conversionls, Conversionld, Conversionlh
+    - Updates xtra_scen block
+    - Updates base_year, initial_year, final_year
+    """
+    update_yaml_conversions(og_data, yaml_path)
+    update_yaml_xtra_scen(og_data, yaml_path)
+    update_yaml_years(og_data, yaml_path)
+    
+    print("[Success] Yaml file 'MOMF_T1_A' updated.")
+    print("-------------------------------------------------------------------------\n")
+
+
+
 #--------------------------------------------------------------------------------------------------#
 
 
@@ -1167,6 +1327,17 @@ def main():
         )
     except Exception as e:
         print(f"[Error] Failed to update projections file: {e}")
+        
+    try:
+        update_yaml_structure(
+            og_data=OG_Input_Data,
+            yaml_path="MOMF_T1_A.yaml"
+        )
+    except Exception as e:
+        print(f"[Error] Failed to update YAML structure: {e}")
+
+
+
 
 
 if __name__ == "__main__":
