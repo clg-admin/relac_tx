@@ -335,7 +335,7 @@ def update_parametrization_capacities(df, output_excel_path):
             "Timeslices": timeslice,
             "Tech.ID": tech_id_map[tech],
             "Tech": tech,
-            "Parameter.ID": 9,
+            "Parameter.ID": 13,
             "Parameter": "CapacityFactor",
             "Unit": None,
             "Projection.Mode": "User defined",
@@ -471,11 +471,11 @@ def update_parametrization_primary_secondary_demand_techs(og_data, output_excel_
     - parse_fuel_name otherwise
     """
     PARAMETERS = [
-        "CapitalCost", "FixedCost", "VariableCost", "ResidualCapacity",
+        "CapitalCost", "FixedCost", "ResidualCapacity",
         "TotalAnnualMaxCapacity", "TotalTechnologyAnnualActivityUpperLimit",
         "TotalTechnologyAnnualActivityLowerLimit", "TotalAnnualMinCapacityInvestment",
         "AvailabilityFactor", "ReserveMarginTagFuel",
-        "ReserveMarginTagTechnology", "TotalAnnualMaxCapacityInvestment"
+        "ReserveMarginTagTechnology", "TotalAnnualMaxCapacityInvestment", "VariableCost"
     ]
 
     PARAMETER_IDS = {name: idx + 1 for idx, name in enumerate(PARAMETERS)}
@@ -567,6 +567,79 @@ def update_parametrization_primary_secondary_demand_techs(og_data, output_excel_
     write_sheet("Secondary Techs", secondary_records, all_years, output_excel_path)
     write_sheet("Demand Techs", demand_records, all_years, output_excel_path)
 
+def update_parametrization_variable_cost(og_data, output_excel_path):
+    """
+    Updates the 'VariableCost' sheet in the Parametrization file.
+    Includes an additional 'Mode.Operation' column from the MODE_OF_OPERATION column in the data.
+    Applies the same projection logic and naming rules as other tech sheets.
+    """
+
+    param = "VariableCost"
+    if param not in og_data:
+        print(f"[Warning] {param} not found in OG_Input_Data.")
+        return
+
+    df = og_data[param]
+    tech_ids = {}
+    tech_counter = 1
+    all_years = sorted(df["YEAR"].unique())
+    records = []
+
+    for (tech, mode), group in df.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"]):
+        if tech not in tech_ids:
+            tech_ids[tech] = tech_counter
+            tech_counter += 1
+
+        prefix = tech[0:3]
+        if prefix in ["MIN", "RNW", "PWR", "TRN"]:
+            tech_name = parse_tech_name(tech)
+        else:
+            tech_name = parse_fuel_name(tech)
+
+        record = {
+            "Mode.Operation": int(mode),
+            "Tech.ID": tech_ids[tech],
+            "Tech": tech,
+            "Tech.Name": tech_name,
+            "Parameter.ID": 12,
+            "Parameter": "VariableCost",
+            "Unit": None,
+            "Projection.Parameter": 0
+        }
+
+        year_values = {int(row["YEAR"]): row["VALUE"] for _, row in group.iterrows()}
+        values = [year_values.get(y, float("nan")) for y in all_years]
+        non_nan_count = sum(pd.notna(values))
+
+        if non_nan_count == 0:
+            mode_str = "EMPTY"
+        elif non_nan_count == 1 and not pd.isna(values[0]):
+            mode_str = "Flat"
+        elif non_nan_count == len(values):
+            mode_str = "User defined"
+        else:
+            mode_str = "interpolation"
+
+        record["Projection.Mode"] = mode_str
+
+        for y in all_years:
+            record[int(y)] = year_values.get(y, float("nan"))
+
+        records.append(record)
+
+    # Write to Excel
+    df_out = pd.DataFrame(records)
+    df_out = df_out.sort_values(by=["Tech", "Mode.Operation"])
+
+    wb = load_workbook(output_excel_path)
+    ws = wb["VariableCost"]
+    ws.delete_rows(1, ws.max_row)
+
+    for r in dataframe_to_rows(df_out, index=False, header=True):
+        ws.append(r)
+
+    wb.save(output_excel_path)
+    print("[Success] Sheet 'VariableCost' in Parametrization file updated.")
 
 
 def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
@@ -1216,6 +1289,11 @@ def update_parametrization(og_data, output_excel_path, input_excel_path):
     )
 
     update_parametrization_primary_secondary_demand_techs(
+        og_data=og_data,
+        output_excel_path=output_excel_path
+    )
+    
+    update_parametrization_variable_cost(
         og_data=og_data,
         output_excel_path=output_excel_path
     )
