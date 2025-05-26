@@ -83,6 +83,7 @@ for g in range( len( groups_list ) ):
     this_proj_df_new.replace( { 'Direction': 'Input'}, 'InputActivityRatio', inplace=True )
     this_proj_df_new.rename(columns={ "Direction": "Parameter" }, inplace=True)
     this_proj_df_new = this_proj_df_new.drop(columns=['Projection.Mode', 'Projection.Parameter'])
+    
     #
     if groups_list[g] != params['primary'] and groups_list[g] != params['transport']:
         this_df_fuel_i = this_df['Fuel.I'].tolist()
@@ -106,6 +107,8 @@ for g in range( len( groups_list ) ):
     this_df_fuel_o = this_df['Fuel.O'].tolist()
     this_df_fuel_o_name = this_df['Fuel.O.Name'].tolist()
     #------------------------------------------------------#
+    this_df_mode_of_operation= this_df['Mode.Operation'].tolist()
+    #------------------------------------------------------#
     these_fuels = this_df_fuel_i + this_df_fuel_o
     these_fuels_names = this_df_fuel_i_name + this_df_fuel_o_name
     #------------------------------------------------------#
@@ -126,9 +129,10 @@ for g in range( len( groups_list ) ):
     for t in range( len( this_df_techs ) ):
         this_tech = this_df_techs[t]
         output_fuel = this_df_fuel_o[t]
+        mode_of_operation_order = this_df_mode_of_operation[t]
         #
         # Query the output // Applies to all *groups_list* 
-        this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.O' ] == output_fuel ) ]
+        this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.O' ] == output_fuel ) & ( this_df[ 'Mode.Operation' ] == mode_of_operation_order ) ]
         this_df_select_by_fo = this_df_select[ 'Value.Fuel.O' ].tolist()[0]
         
         this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == output_fuel ) ] 
@@ -138,6 +142,7 @@ for g in range( len( groups_list ) ):
             # query 1 input and 1 output
             input_fuel = this_df_fuel_i[t]
             input_fuel_2 = 'none'
+        
         #
         if groups_list[g] == params['transport']:
             # query 2 inputs
@@ -146,24 +151,24 @@ for g in range( len( groups_list ) ):
         #
         if groups_list[g] != params['primary']:
             if groups_list[g] != params['transport']:
-                this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.I' ] == input_fuel ) ]
+                this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.I' ] == input_fuel ) & ( this_df[ 'Mode.Operation' ] == mode_of_operation_order ) ]
                 this_df_select_by_fi = [ this_df_select[ 'Value.Fuel.I' ].tolist()[0] ]
                 #
-                this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == input_fuel ) ] 
+                this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == input_fuel ) & ( this_proj_df[ 'Mode.Operation' ] == mode_of_operation_order ) ] 
                 this_proj_df_mode_i, this_proj_df_param_i = [ this_proj_df_local['Projection.Mode'].tolist()[0] ], [ this_proj_df_local['Projection.Parameter'].tolist()[0] ]  
                 #
             else:
                 this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.I.1' ] == input_fuel ) ]
                 this_df_select_by_fi = [ this_df_select[ 'Value.Fuel.I.1' ].tolist()[0] ]
                 #
-                this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == input_fuel ) ] 
+                this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == input_fuel ) & ( this_proj_df[ 'Mode.Operation' ] == mode_of_operation_order ) ] 
                 this_proj_df_mode_i, this_proj_df_param_i = [ this_proj_df_local['Projection.Mode'].tolist()[0] ], [ this_proj_df_local['Projection.Parameter'].tolist()[0] ]  
                 #
                 if input_fuel_2 != 'none':
-                    this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.I.2' ] == input_fuel_2 ) ]
+                    this_df_select = this_df.loc[ ( this_df[ 'Tech' ] == this_tech ) & ( this_df[ 'Fuel.I.2' ] == input_fuel_2 ) & ( this_df[ 'Mode.Operation' ] == mode_of_operation_order ) ]
                     this_df_select_by_fi += [ this_df_select[ 'Value.Fuel.I.2' ].tolist()[0] ]
                     #
-                    this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == input_fuel_2 ) ] 
+                    this_proj_df_local = this_proj_df.loc[ ( this_proj_df[ 'Tech' ] == this_tech ) & ( this_proj_df[ 'Fuel' ] == input_fuel_2 ) & ( this_proj_df[ 'Mode.Operation' ] == mode_of_operation_order ) ] 
                     this_proj_df_mode_i += [ this_proj_df_local['Projection.Mode'].tolist()[0] ]
                     this_proj_df_param_i += [ this_proj_df_local['Projection.Parameter'].tolist()[0] ]
         #
@@ -175,23 +180,29 @@ for g in range( len( groups_list ) ):
         #
         for y in range( len( time_range_vector ) ):
             this_param = 'OutputActivityRatio'
-            mask = ( this_proj_df_new[ 'Tech' ] == this_tech ) & ( this_proj_df_new[ 'Fuel' ] == output_fuel ) & ( this_proj_df_new[ 'Parameter' ] == this_param )
+            mask = ( this_proj_df_new[ 'Tech' ] == this_tech ) & ( this_proj_df_new[ 'Fuel' ] == output_fuel ) & ( this_proj_df_new[ 'Parameter' ] == this_param ) & ( this_proj_df_new[ 'Mode.Operation' ] == mode_of_operation_order )
+            
             if this_proj_df_mode_o == params['flat']:
                 this_proj_df_new.loc[ mask , time_range_vector[y] ] = round( this_df_select_by_fo, 4 )
+            
+            #
+            this_mask_index = this_proj_df_new.loc[ mask , str(time_range_vector[y]) ].index.tolist()[0]
+            this_mask_index_moo = this_proj_df_new.loc[ mask , 'Mode.Operation' ].index.tolist()[0]
+            # Handling OutputActivityRatio
+            this_value_o = deepcopy(
+                this_proj_df_new.loc[mask, str(time_range_vector[y])][this_mask_index])
+            this_mode_of_operation = deepcopy(this_proj_df_new.loc[ mask , 'Mode.Operation' ][this_mask_index_moo])
             #
             # Filling the data :
-            if this_tech + '+' + output_fuel not in tech_plus_fuel_unique_oar:
-                this_mask_index = this_proj_df_new.loc[ mask , str(time_range_vector[y]) ].index.tolist()[0]
-                # Handling OutputActivityRatio
-                this_value_o = deepcopy(
-                    this_proj_df_new.loc[mask, str(time_range_vector[y])][this_mask_index])
+            if this_tech + '+' + output_fuel + '+' + str(this_mode_of_operation) not in tech_plus_fuel_unique_oar:                
+                
                 oar_row = {
                     'PARAMETER': 'OutputActivityRatio',
                     'Scenario': other_setup_params['Main_Scenario'],
                     'REGION': other_setup_params['Region'],
                     'TECHNOLOGY': this_tech,
                     'FUEL': output_fuel,
-                    'MODE_OF_OPERATION': other_setup_params['Mode_of_Operation'],
+                    'MODE_OF_OPERATION': this_mode_of_operation,
                     'YEAR': time_range_vector[y],
                     'Value': deepcopy(this_value_o)  # Placeholder for the computed value for OutputActivityRatio
                 }
@@ -209,26 +220,30 @@ for g in range( len( groups_list ) ):
                     this_proj_df_param_i0 = this_proj_df_param_i[inp]
                     #
                     this_param = 'InputActivityRatio'
-                    mask = ( this_proj_df_new[ 'Tech' ] == this_tech ) & ( this_proj_df_new[ 'Fuel' ] == this_input_fuel ) & ( this_proj_df_new[ 'Parameter' ] == this_param )
+                    mask = ( this_proj_df_new[ 'Tech' ] == this_tech ) & ( this_proj_df_new[ 'Fuel' ] == this_input_fuel ) & ( this_proj_df_new[ 'Parameter' ] == this_param ) & ( this_proj_df_new[ 'Mode.Operation' ] == mode_of_operation_order )
                     ###################################################################################################
                     if this_proj_df_mode_i0 == params['flat']:
-                        this_proj_df_new.loc[ mask , time_range_vector[y] ] = round( this_df_select_by_fi[ inp ], 4 )
+                        this_proj_df_new.loc[ mask , str(time_range_vector[y]) ] = round( this_df_select_by_fi[ inp ], 4 )
                     if this_proj_df_mode_i0 == params['yearly_per_change']:
                         if y == 0:
-                            this_proj_df_new.loc[ mask , time_range_vector[y] ] = round( this_df_select_by_fi[ inp ], 4 ) # round( this_df_select_by_fi[ inp ]*( 1 + this_proj_df_param_i0/100 ), 4 )
+                            this_proj_df_new.loc[ mask , str(time_range_vector[y]) ] = round( this_df_select_by_fi[ inp ], 4 ) # round( this_df_select_by_fi[ inp ]*( 1 + this_proj_df_param_i0/100 ), 4 )
                         else:
-                            this_proj_df_new.loc[ mask , time_range_vector[y] ] = round( this_proj_df_new.loc[ mask , str(time_range_vector[y-1]) ]*( 1 + this_proj_df_param_i0/100 ), 4 )
+                            this_proj_df_new.loc[ mask , str(time_range_vector[y]) ] = round( this_proj_df_new.loc[ mask , str(time_range_vector[y-1]) ]*( 1 + this_proj_df_param_i0/100 ), 4 )
                     #
                     if this_proj_df_mode_i0 == params['user_defined']:
-                        this_proj_df_new.loc[ mask , time_range_vector[y] ] = round( this_proj_df.loc[ mask , str(time_range_vector[y]) ], 4 )
+                        
+                        this_proj_df_new.loc[ mask , str(time_range_vector[y]) ] = round( this_proj_df.loc[ mask , str(time_range_vector[y]) ], 4 )
+
                     #
                     ###################################################################################################
                     # Filling the data :
                                                                                           
                     this_mask_index = this_proj_df_new.loc[ mask , str(time_range_vector[y]) ].index.tolist()[0]
+                    this_mask_index_moo = this_proj_df_new.loc[ mask , 'Mode.Operation' ].index.tolist()[0]
 
                     # Here, instead of updating df_IAR_dict and appending directly to df_IAR:
                     this_value = deepcopy(this_proj_df_new.loc[mask, str(time_range_vector[y])][this_mask_index])
+                    this_mode_of_operation = deepcopy(this_proj_df_new.loc[ mask , 'Mode.Operation' ][this_mask_index_moo])
 
                     # Create a new dictionary for each row to append
                     iar_row = {
@@ -237,19 +252,18 @@ for g in range( len( groups_list ) ):
                         'REGION': other_setup_params['Region'], 
                         'TECHNOLOGY': this_tech, 
                         'FUEL': this_input_fuel,
-                        'MODE_OF_OPERATION': other_setup_params['Mode_of_Operation'], 
+                        'MODE_OF_OPERATION': this_mode_of_operation, 
                         'YEAR': time_range_vector[y], 
                         'Value': this_value
                     }
                     # Append the new dictionary to the list for bulk append later
                     accumulated_rows_IAR.append(iar_row)
-                    
                     #
                 #
             #
         # Create a tech + fuel string to show uniqueness in oar values:
-        if this_tech + '+' + output_fuel not in tech_plus_fuel_unique_oar:
-            tech_plus_fuel_unique_oar.append(this_tech + '+' + output_fuel)
+        if this_tech + '+' + output_fuel + '+' + str(this_mode_of_operation) not in tech_plus_fuel_unique_oar:
+            tech_plus_fuel_unique_oar.append(this_tech + '+' + output_fuel + '+' + str(this_mode_of_operation) )
         #
     #
     AR_Base_proj_df_new.update({ groups_list[g]:this_proj_df_new })
@@ -898,59 +912,66 @@ for s in range( len( param_sheets ) ):
                                     accumulated_data[this_param] = []
                                 accumulated_data[this_param].append(new_row)
                             
-                            # # Condition when the model has only one timeslice
-                            # elif param_sheets[s] != 'Timeslices' and timeslices_list_check == []:
-    
-                            #     # Prepare dictionary to accumulate data based on conditions
-                            #     new_row = {
-                            #         'PARAMETER': this_param,
-                            #         'Scenario': other_setup_params['Main_Scenario'],
-                            #         'REGION': other_setup_params['Region'],
-                            #         'TECHNOLOGY': this_tech,
-                            #         'YEAR': time_range_vector[y],
-                            #         'Value': deepcopy(round(this_df_new_2.loc[n, time_range_vector[y]], 4)),
-                            #         'TIMESLICE': timeslices_list[ts]
-                            #     }
+                elif this_param in ['VariableCost']:
+                    
+                    if len(other_setup_params['Mode_of_Operation'])>1:
+                        modes_of_operation = other_setup_params['Mode_of_Operation']
+                    
+                        # for moo in range(len(modes_of_operation)):    
+                        for y in range(len(time_range_vector)):
+                            
+                            # Condition when the model has one or more than one timeslice
+                            if param_sheets[s] == 'VariableCost':
+                                # Prepare dictionary to accumulate data based on conditions
+                                new_row = {
+                                    'PARAMETER': this_param,
+                                    'Scenario': other_setup_params['Main_Scenario'],
+                                    'REGION': other_setup_params['Region'],
+                                    'TECHNOLOGY': this_tech,
+                                    'YEAR': time_range_vector[y],
+                                    'MODE_OF_OPERATION': this_df_new_2.loc[n, 'Mode.Operation'],
+                                    'Value': deepcopy(round(this_df_new_2.loc[n, str(time_range_vector[y])], 4)),
+                                }
                                 
                                 
-                            #     # Accumulate data for bulk append
-                            #     if this_param not in accumulated_data:
-                            #         accumulated_data[this_param] = []
-                            #     accumulated_data[this_param].append(new_row)
-                
-
-                for y in range(len(time_range_vector)):
-                                         
-                    # Prepare dictionary to accumulate data based on conditions
-                    if this_param not in params['sheets_exceptions_to_fuel']:
-                        new_row = {
-                            'PARAMETER': this_param,
-                            'Scenario': other_setup_params['Main_Scenario'],
-                            'REGION': other_setup_params['Region'],
-                            'TECHNOLOGY': this_tech,
-                            'YEAR': time_range_vector[y],
-                            'Value': deepcopy(round(this_df_new_2.loc[n, str(time_range_vector[y])], 4))
-                        }
-                        
-                    elif this_param in params['sheets_exceptions_to_fuel']:
-                        new_row = {
-                            'PARAMETER': this_param,
-                            'Scenario': other_setup_params['Main_Scenario'],
-                            'REGION': other_setup_params['Region'],
-                            'FUEL': this_tech,
-                            'YEAR': time_range_vector[y],
-                            'Value': deepcopy(round(this_df_new_2.loc[n, str(time_range_vector[y])], 4))
-                        }
-    
-                    # Additional conditions for specific parameters
-                    if this_param in ['VariableCost']:
-                        new_row['MODE_OF_OPERATION'] = other_setup_params['Mode_of_Operation']
-    
-                    # Accumulate data for bulk append
-                    if this_param not in accumulated_data:
-                        accumulated_data[this_param] = []
-                    accumulated_data[this_param].append(new_row)
-                    #
+                                # Accumulate data for bulk append
+                                if this_param not in accumulated_data:
+                                    accumulated_data[this_param] = []
+                                accumulated_data[this_param].append(new_row) 
+                                # sys.exit(9)
+                else:
+                    for y in range(len(time_range_vector)):
+                                             
+                        # Prepare dictionary to accumulate data based on conditions
+                        if this_param not in params['sheets_exceptions_to_fuel']:
+                            new_row = {
+                                'PARAMETER': this_param,
+                                'Scenario': other_setup_params['Main_Scenario'],
+                                'REGION': other_setup_params['Region'],
+                                'TECHNOLOGY': this_tech,
+                                'YEAR': time_range_vector[y],
+                                'Value': deepcopy(round(this_df_new_2.loc[n, str(time_range_vector[y])], 4))
+                            }
+                            
+                        elif this_param in params['sheets_exceptions_to_fuel']:
+                            new_row = {
+                                'PARAMETER': this_param,
+                                'Scenario': other_setup_params['Main_Scenario'],
+                                'REGION': other_setup_params['Region'],
+                                'FUEL': this_tech,
+                                'YEAR': time_range_vector[y],
+                                'Value': deepcopy(round(this_df_new_2.loc[n, str(time_range_vector[y])], 4))
+                            }
+        
+                        # Additional conditions for specific parameters
+                        if this_param in ['VariableCost'] and len(other_setup_params['Mode_of_Operation'])<2:
+                            new_row['MODE_OF_OPERATION'] = other_setup_params['Mode_of_Operation'][0]
+        
+                        # Accumulate data for bulk append
+                        if this_param not in accumulated_data:
+                            accumulated_data[this_param] = []
+                        accumulated_data[this_param].append(new_row)
+                        #
                     #
                 #
             #
@@ -1039,6 +1060,7 @@ emissions_list = list( set( Emissions_ghg_df['Emission'].tolist() + Emissions_ex
 
 #
 df_Emissions = pd.DataFrame( columns = Wide_Param_Header )
+these_e_modeofoperation = Emissions_ghg_df['Mode_Of_Operation'].tolist()
 these_emissions = Emissions_ghg_df['Emission'].tolist()
 these_e_techs = Emissions_ghg_df['Tech'].tolist()
 these_e_values = Emissions_ghg_df['EmissionActivityRatio'].tolist()
@@ -1056,7 +1078,7 @@ for e in range(len(these_emissions)):
             'REGION': other_setup_params['Region'],
             'TECHNOLOGY': this_tech,
             'EMISSION': this_emission,
-            'MODE_OF_OPERATION': other_setup_params['Mode_of_Operation'],
+            'MODE_OF_OPERATION': these_e_modeofoperation[e],
             'YEAR': time_range_vector[y],
             'Value': these_e_values[e]
         }
@@ -1071,6 +1093,7 @@ if accumulated_emission_data:  # Ensure there's something to append
 df_EmissionPenalty = pd.DataFrame( columns = Wide_Param_Header )
 these_emissions = Emissions_ext_df['External Cost'].tolist()
 these_e_techs = Emissions_ext_df['Tech'].tolist()
+these_e_modeofoperation= Emissions_ext_df['Mode_Of_Operation'].tolist()
 these_e_values = Emissions_ext_df['EmissionActivityRatio'].tolist()
 these_e_penalty = Emissions_ext_df['EmissionsPenalty'].tolist()
 this_emission_unique = []
@@ -1082,6 +1105,7 @@ emission_unique_set = set()  # For tracking unique emission-year combinations
 for e in range(len(these_emissions)):
     this_emission = these_emissions[e]
     this_tech = these_e_techs[e]  # Assuming this is relevant for both emissions and penalties
+    this_modeofoperation = these_e_modeofoperation[e]
 
     for y in range(len(time_range_vector)):
         # Accumulate EmissionActivityRatio data
@@ -1091,7 +1115,7 @@ for e in range(len(these_emissions)):
             'REGION': other_setup_params['Region'],
             'TECHNOLOGY': this_tech,
             'EMISSION': this_emission,
-            'MODE_OF_OPERATION': other_setup_params['Mode_of_Operation'],
+            'MODE_OF_OPERATION': these_e_modeofoperation,
             'YEAR': time_range_vector[y],
             'Value': these_e_values[e]  # Assuming these_e_values corresponds to EmissionActivityRatio values
         })
