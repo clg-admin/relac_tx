@@ -479,7 +479,7 @@ These data parameters serve as the basis to implement the experiment.
 baseyear = params['base_year']
 endyear = params['final_year']
 global time_range_vector
-time_range_vector = [ n for n in range( baseyear, endyear+1 ) ]
+time_range_vector = [ n for n in range( int(baseyear), int(endyear)+1 ) ]
 '''''
 ################################# PART 1 #################################
 '''''
@@ -556,6 +556,9 @@ tech_param_list_yearly_timeslices_df = pd.DataFrame(columns=tech_param_list_all_
 tech_param_list_yearly_timeslices_df.insert(0, 'Timeslices', np.nan)
 #
 tech_param_list_yearly_capacities_df = deepcopy(tech_param_list_yearly_timeslices_df)
+#
+tech_param_list_yearly_variablecost_df = deepcopy(tech_param_list_yearly_primary_df)
+tech_param_list_yearly_variablecost_df.insert(0, 'Mode.Operation', np.nan)
 #
 tech_param_list_yearly_demands_df = pd.DataFrame(columns=tech_param_list_all_yearly_df_headers)
 #
@@ -695,8 +698,8 @@ for n in range(len(codes_list_techs_primary)):
 
     # Second part: For yearly primary parameters
     for p in range(len(tech_param_list_primary)):
-        if tech_param_list_secondary[p] != 'CapacityFactor' and tech_param_list_secondary[p] != 'YearSplit' \
-            and params['xtra_scen']['Timeslice'] == 'Some':
+        if tech_param_list_primary[p] != 'CapacityFactor' and tech_param_list_primary[p] != 'YearSplit' \
+            and tech_param_list_primary[p] != 'VariableCost' and params['xtra_scen']['Timeslice'] == 'Some':
             accumulated_rows_yearly_primary.append({
                 'Tech.ID': n + 1,
                 'Tech': codes_list_techs_primary[n],
@@ -706,7 +709,7 @@ for n in range(len(codes_list_techs_primary)):
                 'Projection.Parameter': 0  # Assuming this is a constant value for all rows
             })
             
-        elif tech_param_list_secondary[p] != 'YearSplit' and params['xtra_scen']['Timeslice'] == 'All':
+        elif tech_param_list_primary[p] != 'YearSplit' and params['xtra_scen']['Timeslice'] == 'All':
             accumulated_rows_yearly_primary.append({
                 'Tech.ID': n + 1,
                 'Tech': codes_list_techs_primary[n],
@@ -723,6 +726,80 @@ tech_param_list_all_notyearly_df = pd.concat([tech_param_list_all_notyearly_df, 
 # Convert the accumulated rows for yearly primary parameters into a DataFrame and concatenate
 new_rows_yearly_primary_df = pd.DataFrame(accumulated_rows_yearly_primary)
 tech_param_list_yearly_primary_df = pd.concat([tech_param_list_yearly_primary_df, new_rows_yearly_primary_df], ignore_index=True)
+
+#---------------------------------------------------------------------------------------------------#
+# Timeslices for CapacityFactor
+
+# Initialize empty lists to accumulate rows
+accumulated_rows_yearly_timeslices = []
+
+
+if params['xtra_scen']['Timeslice'] == 'Some':
+    # Loop through secondary techs
+    for n in range(len(codes_list_techs_primary)):    
+        # Second part: For yearly primary parameters
+        # for p in range(len(tech_param_list_primary)):
+        for ts in params['xtra_scen']['Timeslices']:
+            # if tech_param_list_primary[p] == 'CapacityFactor':
+            accumulated_rows_yearly_timeslices.append({
+                'Timeslices': ts,
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_primary[n],
+                'Tech.Name': primary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': 'CapacityFactor',
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
+    
+    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
+    new_rows_yearly_timeslices_df = pd.DataFrame(accumulated_rows_yearly_timeslices)
+    tech_param_list_yearly_timeslices_df = pd.concat([tech_param_list_yearly_timeslices_df, new_rows_yearly_timeslices_df], ignore_index=True)
+#---------------------------------------------------------------------------------------------------#
+# VariableCost timeslices
+# Initialize empty lists to accumulate rows
+accumulated_rows_yearly_variablecost= []
+
+
+if params['xtra_scen']['Timeslice'] == 'Some':
+    # Loop through secondary techs
+    for n in range(len(codes_list_techs_primary)):
+        # Second part: For yearly primary parameters            
+        # for p in range(len(tech_param_list_primary)):
+        for moo in params['xtra_scen']['Mode_of_Operation']:
+            # if tech_param_list_primary[p] == 'VariableCost':
+            accumulated_rows_yearly_variablecost.append({
+                'Mode.Operation': moo,
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_primary[n],
+                'Tech.Name': primary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': 'VariableCost',
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
+    
+    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
+    new_rows_yearly_timeslices_df = pd.DataFrame(accumulated_rows_yearly_variablecost)
+    tech_param_list_yearly_variablecost_df = pd.concat([tech_param_list_yearly_variablecost_df, new_rows_yearly_timeslices_df], ignore_index=True)
+#---------------------------------------------------------------------------------------------------#
+# YearSplit timeslices
+accumulated_rows_yearly_capacities = []
+if params['xtra_scen']['Timeslice'] == 'Some':
+    # Second part: For yearly primary parameters            
+    # for p in range(len(codes_list_techs_primary)):
+    for ts in params['xtra_scen']['Timeslices']:
+        # if tech_param_list_primary[p] == 'YearSplit':
+        accumulated_rows_yearly_capacities.append({
+            'Timeslices': ts,
+            'Parameter.ID': p + 1,
+            'Parameter': 'YearSplit',
+            'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+        })
+                
+    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
+    new_rows_yearly_capacities_df = pd.DataFrame(accumulated_rows_yearly_capacities)
+    tech_param_list_yearly_capacities_df = pd.concat([tech_param_list_yearly_capacities_df, new_rows_yearly_capacities_df], ignore_index=True)
+#---------------------------------------------------------------------------------------------------#
+
 #---------------------------------------------------------------------------------------------------#
 # Secondary Techs
 
@@ -746,7 +823,7 @@ for n in range(len(codes_list_techs_secondary)):
     # For yearly secondary parameters
     for p in range(len(tech_param_list_secondary)):
         if tech_param_list_secondary[p] != 'CapacityFactor' and tech_param_list_secondary[p] != 'YearSplit' \
-            and params['xtra_scen']['Timeslice'] == 'Some':
+           and tech_param_list_secondary[p] != 'VariableCost' and params['xtra_scen']['Timeslice'] == 'Some':
             accumulated_rows_yearly_secondary.append({
                 'Tech.ID': n + 1,
                 'Tech': codes_list_techs_secondary[n],
@@ -777,63 +854,69 @@ tech_param_list_yearly_secondary_df = pd.concat([tech_param_list_yearly_secondar
 # Timeslices for CapacityFactor
 
 # Initialize empty lists to accumulate rows
-accumulated_rows_all_notyearly_timeslices = []
 accumulated_rows_yearly_timeslices = []
 
 
 if params['xtra_scen']['Timeslice'] == 'Some':
-
     # Loop through secondary techs
-    for n in range(len(codes_list_techs_secondary)):
-        # # For all not yearly parameters
-        # for p in range(len(tech_param_list_all_notyearly)):
-        #     accumulated_rows_all_notyearly_timeslices.append({
-        #         'Tech.Type': 'Secondary',
-        #         'Tech.ID': n + 1,
-        #         'Tech': codes_list_techs_secondary[n],
-        #         'Tech.Name': secondary_techs_names_eng[n],
-        #         'Parameter.ID': p + 1,
-        #         'Parameter': tech_param_list_all_notyearly[p]
-        #     })
-    
+    for n in range(len(codes_list_techs_secondary)):            
         # For yearly secondary parameters
-        for p in range(len(tech_param_list_secondary)):
-            
-            for ts in params['xtra_scen']['Timeslices']:
-                if tech_param_list_secondary[p] == 'CapacityFactor':
-                
-                    accumulated_rows_yearly_timeslices.append({
-                        'Timeslices': ts,
-                        'Tech.ID': n + 1,
-                        'Tech': codes_list_techs_secondary[n],
-                        'Tech.Name': secondary_techs_names_eng[n],
-                        'Parameter.ID': p + 1,
-                        'Parameter': tech_param_list_secondary[p],
-                        'Projection.Parameter': 0  # Assuming this is a constant value for all rows
-                    })
-
-    # # Convert the accumulated rows for all not yearly parameters into a DataFrame and concatenate
-    # new_rows_all_notyearly_timeslices_df = pd.DataFrame(accumulated_rows_all_notyearly_timeslices)
-    # tech_param_list_all_notyearly_df = pd.concat([tech_param_list_all_notyearly_df, new_rows_all_notyearly_timeslices_df], ignore_index=True)
+        # for p in range(len(tech_param_list_secondary)):
+        for ts in params['xtra_scen']['Timeslices']:
+            # if tech_param_list_secondary[p] == 'CapacityFactor':
+            accumulated_rows_yearly_timeslices.append({
+                'Timeslices': ts,
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_secondary[n],
+                'Tech.Name': secondary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': 'CapacityFactor',
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
     
     # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
     new_rows_yearly_timeslices_df = pd.DataFrame(accumulated_rows_yearly_timeslices)
     tech_param_list_yearly_timeslices_df = pd.concat([tech_param_list_yearly_timeslices_df, new_rows_yearly_timeslices_df], ignore_index=True)
 #---------------------------------------------------------------------------------------------------#
+# VaraibleCost timeslices
+# Initialize empty lists to accumulate rows
+accumulated_rows_yearly_variablecost= []
+
+
+if params['xtra_scen']['Timeslice'] == 'Some':
+    # Loop through secondary techs
+    for n in range(len(codes_list_techs_secondary)):                    
+        # For yearly secondary parameters
+        # for p in range(len(tech_param_list_secondary)):
+        for moo in params['xtra_scen']['Mode_of_Operation']:
+            # if tech_param_list_secondary[p] == 'VariableCost':
+            accumulated_rows_yearly_variablecost.append({
+                'Mode.Operation': moo,
+                'Tech.ID': n + 1,
+                'Tech': codes_list_techs_secondary[n],
+                'Tech.Name': secondary_techs_names_eng[n],
+                'Parameter.ID': p + 1,
+                'Parameter': 'VariableCost',
+                'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+            })
+    
+    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
+    new_rows_yearly_timeslices_df = pd.DataFrame(accumulated_rows_yearly_variablecost)
+    tech_param_list_yearly_variablecost_df = pd.concat([tech_param_list_yearly_variablecost_df, new_rows_yearly_timeslices_df], ignore_index=True)
+#---------------------------------------------------------------------------------------------------#
 # YearSplit timeslices
 accumulated_rows_yearly_capacities = []
-if params['xtra_scen']['Timeslice'] == 'Some':
+if params['xtra_scen']['Timeslice'] == 'Some':   
     # For yearly secondary parameters
-    for p in range(len(tech_param_list_secondary)):
-        for ts in params['xtra_scen']['Timeslices']:
-            if tech_param_list_secondary[p] == 'YearSplit':
-            
-                accumulated_rows_yearly_capacities.append({
-                    'Timeslices': ts,
-                    'Parameter.ID': p + 1,
-                    'Parameter': tech_param_list_secondary[p],
-                    'Projection.Parameter': 0  # Assuming this is a constant value for all rows
-                })
+    # for p in range(len(tech_param_list_secondary)):
+    for ts in params['xtra_scen']['Timeslices']:
+        # if tech_param_list_secondary[p] == 'YearSplit':
+        accumulated_rows_yearly_capacities.append({
+            'Timeslices': ts,
+            'Parameter.ID': p + 1,
+            'Parameter': 'YearSplit',
+            'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+        })
                 
     # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
     new_rows_yearly_capacities_df = pd.DataFrame(accumulated_rows_yearly_capacities)
@@ -1551,7 +1634,8 @@ tech_param_list_all_notyearly_df = tech_param_list_all_notyearly_df.replace(np.n
 tech_param_list_yearly_primary_df = tech_param_list_yearly_primary_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_secondary_df = tech_param_list_yearly_secondary_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)
-tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)                                                                                                                                                                                                                       
+tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)
+tech_param_list_yearly_variablecost_df = tech_param_list_yearly_variablecost_df.replace(np.nan, '', regex=True)                                                                                                                                                                                                                       
 tech_param_list_yearly_demands_df = tech_param_list_yearly_demands_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_disttrn_df = tech_param_list_yearly_disttrn_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_trn_df = tech_param_list_yearly_trn_df.replace(np.nan, '', regex=True)
@@ -1565,9 +1649,10 @@ if params['xtra_scen']['Timeslice'] == 'All':
 else:
     tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)
     tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)
+    tech_param_list_yearly_variablecost_df = tech_param_list_yearly_variablecost_df.replace(np.nan, '', regex=True)
     tech_param_list_dfs = [ tech_param_list_all_notyearly_df, tech_param_list_yearly_primary_df ,
                             tech_param_list_yearly_secondary_df, tech_param_list_yearly_timeslices_df,
-                            tech_param_list_yearly_capacities_df,
+                            tech_param_list_yearly_capacities_df, tech_param_list_yearly_variablecost_df,
                             tech_param_list_yearly_demands_df , tech_param_list_yearly_disttrn_df, 
                             tech_param_list_yearly_trn_df, tech_param_list_yearly_trngroups_df ]
 tech_param_list_dfs_names = params['tech_param_list_dfs_names']

@@ -257,22 +257,20 @@ tech_param_list_all_notyearly: [
   ]
 
 tech_param_list_primary: [     
-  'CapitalCost', 'FixedCost', 'VariableCost', 
+  'CapitalCost', 'FixedCost', 
   'ResidualCapacity', 'TotalAnnualMaxCapacity',
   'TotalTechnologyAnnualActivityUpperLimit',
   'TotalTechnologyAnnualActivityLowerLimit',
   'TotalAnnualMinCapacityInvestment',
-  'AvailabilityFactor', 'CapacityFactor',
-  'YearSplit'
+  'AvailabilityFactor'
   ]
 tech_param_list_secondary: [
-  'CapitalCost', 'FixedCost', 'VariableCost', 
+  'CapitalCost', 'FixedCost',
   'ResidualCapacity', 'TotalAnnualMaxCapacity',
   'TotalTechnologyAnnualActivityUpperLimit',
   'TotalTechnologyAnnualActivityLowerLimit',
   'TotalAnnualMinCapacityInvestment',
-  'AvailabilityFactor', 'CapacityFactor',
-  'YearSplit'
+  'AvailabilityFactor'
   ]
 
 tech_param_list_demands: [
@@ -382,7 +380,7 @@ df_techs_TRNGROUP_projection_HEADER: [
 
 tech_param_list_dfs_names: [
   'Fixed Horizon Parameters', 'Primary Techs', 'Secondary Techs', 
-  'Capacities', 'Yearsplit', 'Demand Techs', 
+  'Capacities', 'Yearsplit', 'VariableCost', 'Demand Techs', 
   'Transport Fuel Distribution', 'Vehicle Techs', 'Vehicle Groups'
   ]
 #---------------------------------------------------------------#
