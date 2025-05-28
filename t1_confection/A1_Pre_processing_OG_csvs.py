@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+import warnings
 
 # Define folder paths
 INPUT_FOLDER = "OG_csvs_inputs"
@@ -370,7 +371,7 @@ def update_parametrization_capacities(df, output_excel_path):
     print("[Success] Sheet 'Capacities' in Parametrization file updated.")
 
 def update_parametrization_yearsplit(df, output_excel_path):
-    """Updates Yearsplit sheet in A-O_Parametrization.xlsx using CapacityFactor data."""
+    """Updates Yearsplit sheet in A-O_Parametrization.xlsx using YearSplit data."""
     unique_years = sorted(df["YEAR"].unique())
     year_cols = [str(y) for y in unique_years]
 
@@ -381,7 +382,7 @@ def update_parametrization_yearsplit(df, output_excel_path):
         record = {
             "Timeslices": timeslice,
             "Parameter.ID": 14,
-            "Parameter": "Yearsplit",
+            "Parameter": "YearSplit",
             "Unit": None,
             "Projection.Mode": "User defined",
             "Projection.Parameter": 0
@@ -408,6 +409,47 @@ def update_parametrization_yearsplit(df, output_excel_path):
 
     wb.save(output_excel_path)
     print("[Success] Sheet 'Yearsplit' in Parametrization file updated.")
+
+def update_parametrization_daysplit(df, output_excel_path):
+    """Updates DaySplit sheet in A-O_Parametrization.xlsx using DaySplit data."""
+    unique_years = sorted(df["YEAR"].unique())
+    year_cols = [str(y) for y in unique_years]
+    
+    records = []
+    
+    for dailytimebracket, group in df.groupby("DAILYTIMEBRACKET"):
+
+        record = {
+            "DAILYTIMEBRACKET": dailytimebracket,
+            "Parameter.ID": 15,
+            "Parameter": "DaySplit",
+            "Unit": None,
+            "Projection.Mode": "User defined",
+            "Projection.Parameter": 0
+        }
+
+        for _, row in group.iterrows():
+            record[str(int(row["YEAR"]))] = row["VALUE"]
+
+        records.append(record)
+        
+    df_cap = pd.DataFrame(records)
+    fixed_cols = [
+        "DAILYTIMEBRACKET", "Parameter.ID",
+        "Parameter", "Unit", "Projection.Mode", "Projection.Parameter"
+    ]
+
+    df_cap = df_cap[fixed_cols + year_cols]
+
+    wb = load_workbook(output_excel_path)
+    ws = wb["DaySplit"]
+    ws.delete_rows(1, ws.max_row)
+
+    for row in dataframe_to_rows(df_cap, index=False, header=True):
+        ws.append(row)
+
+    wb.save(output_excel_path)
+    print("[Success] Sheet 'DaySplit' in Parametrization file updated.")
 
 def update_parametrization_fixed_horizon_parameters(df_ctau, df_oplife, output_excel_path, input_excel_path):
     """
@@ -642,7 +684,7 @@ def update_parametrization_variable_cost(og_data, output_excel_path):
     print("[Success] Sheet 'VariableCost' in Parametrization file updated.")
 
 
-def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
+def update_xtra_emissions_ghg(og_data, workbook):
     """
     Updates the 'GHGs' sheet in A-Xtra_Emissions.xlsx using EmissionActivityRatio data.
     Keeps only one row per (TECHNOLOGY, EMISSION, MODE_OF_OPERATION), taking the first available value.
@@ -666,22 +708,60 @@ def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
         })
     )
 
-    # Add constant unit
     grouped["Unit"] = "MT"
     grouped = grouped[["Mode_Of_Operation", "Tech", "Emission", "EmissionActivityRatio", "Unit"]]
 
-    os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
-
-    wb = load_workbook(input_excel_path)
-    ws = wb["GHGs"]
+    ws = workbook["GHGs"]
     ws.delete_rows(1, ws.max_row)
 
     for row in dataframe_to_rows(grouped, index=False, header=True):
         ws.append(row)
 
-    wb.save(output_excel_path)
     print("[Success] Sheet 'GHGs' in Extra Emissions file updated.")
-    print("-------------------------------------------------------------------------\n")
+
+def update_xtra_emissions_externalities(og_data, workbook):
+    """
+    Updates the 'Externalities' sheet in A-Xtra_Emissions.xlsx using EmissionsPenalty data.
+    Fills in Emission, EmissionsPenalty, and Final Unit columns. Other columns remain blank or NaN.
+    """
+
+    if "EmissionsPenalty" not in og_data:
+        print("[Warning] 'EmissionsPenalty' not found in OG_Input_Data.")
+        return
+
+    df = og_data["EmissionsPenalty"]
+
+    # Drop duplicate EMISSION values (value is constant per emission)
+    grouped = (
+        df.groupby("EMISSION", as_index=False)
+        .first()[["EMISSION", "VALUE"]]
+        .rename(columns={
+            "EMISSION": "Emission",
+            "VALUE": "EmissionsPenalty"
+        })
+    )
+
+    grouped["Tech"] = None
+    grouped["External Cost"] = None
+    grouped["Mode_Of_Operation"] = None
+    grouped["EmissionActivityRatio"] = None
+    grouped["Final Unit"] = None
+
+    # Reorder to match Excel columns
+    grouped = grouped[[
+        "Tech", "Emission", "External Cost", "Mode_Of_Operation",
+        "EmissionActivityRatio", "EmissionsPenalty", "Final Unit"
+    ]]
+
+    # Write to workbook
+    ws = workbook["Externalities"]
+    ws.delete_rows(1, ws.max_row)
+
+    for row in dataframe_to_rows(grouped, index=False, header=True):
+        ws.append(row)
+
+    print("[Success] Sheet 'Externalities' in Extra Emissions file updated.")
+
 
 def update_model_base_year_primary(og_data, workbook):
     """
@@ -731,9 +811,11 @@ def update_model_base_year_secondary(og_data, workbook):
     """
     Updates the 'Secondary' sheet in the base year model Excel workbook
     using both 'InputActivityRatio' and 'OutputActivityRatio' data.
-    Only includes technologies not starting with 'MIN' or 'RNW', and excludes fuels ending in '02'.
+    Includes 'PWRBCK' technologies with missing inputs by filling input fields with None.
+    Excludes technologies starting with 'MIN' or 'RNW', and fuels ending in '02'.
     Each row combines matching input/output records for the same technology and mode of operation.
     """
+
     if "InputActivityRatio" not in og_data or "OutputActivityRatio" not in og_data:
         print("[Warning] Missing one or both parameters: 'InputActivityRatio', 'OutputActivityRatio'.")
         return
@@ -741,15 +823,16 @@ def update_model_base_year_secondary(og_data, workbook):
     df_input = og_data["InputActivityRatio"]
     df_output = og_data["OutputActivityRatio"]
 
+    # Filter inputs and outputs by prefix and suffix rules
     df_input = df_input[
-        (~df_input["TECHNOLOGY"].str.startswith(("MIN", "RNW"))) #&
-        # (~df_input["FUEL"].str.endswith("02"))
+        (~df_input["TECHNOLOGY"].str.startswith(("MIN", "RNW")))
     ]
     df_output = df_output[
         (~df_output["TECHNOLOGY"].str.startswith(("MIN", "RNW"))) &
         (~df_output["FUEL"].str.endswith("02"))
     ]
 
+    # Group and merge
     input_grouped = df_input.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
     output_grouped = df_output.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
 
@@ -759,6 +842,47 @@ def update_model_base_year_secondary(og_data, workbook):
         suffixes=("_I", "_O")
     )
 
+    # Handle 'PWRBCK' techs missing input data
+    techs_output_only = df_output[
+        df_output["TECHNOLOGY"].str.startswith("PWRBCK") &
+        ~df_output["TECHNOLOGY"].isin(input_grouped["TECHNOLOGY"])
+    ].copy()
+
+    if not techs_output_only.empty:
+        techs_output_only = techs_output_only.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+        techs_output_only["VALUE_O"] = techs_output_only["VALUE"]
+        techs_output_only["VALUE_I"] = None
+        techs_output_only["FUEL_I"] = None
+
+        merged_extra = techs_output_only.rename(columns={
+            "TECHNOLOGY": "TECHNOLOGY",
+            "MODE_OF_OPERATION": "MODE_OF_OPERATION",
+            "FUEL": "FUEL_O"
+        })[["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]]
+
+        # Add missing columns explicitly to avoid future warning
+        required_columns = ["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]
+        for col in required_columns:
+            if col not in merged_extra.columns:
+                merged_extra[col] = pd.NA
+
+        # Set proper data types to avoid future warnings
+        merged_extra = merged_extra.astype({
+            "TECHNOLOGY": "string",
+            "MODE_OF_OPERATION": "Int64",
+            "FUEL_I": "string",
+            "VALUE_I": "float",
+            "FUEL_O": "string",
+            "VALUE_O": "float"
+        }, errors="ignore")
+
+        # Reorder columns
+        merged_extra = merged_extra[required_columns]
+
+        # Concatenate merged_extra with merged
+        merged = pd.concat([merged, merged_extra], ignore_index=True)
+
+    # Build output records
     records = []
     for _, row in merged.iterrows():
         tech = row["TECHNOLOGY"]
@@ -769,8 +893,8 @@ def update_model_base_year_secondary(og_data, workbook):
         record = {
             "Mode.Operation": mode,
             "Fuel.I": fuel_i,
-            "Fuel.I.Name": parse_fuel_name(fuel_i),
-            "Value.Fuel.I": 1,
+            "Fuel.I.Name": parse_fuel_name(fuel_i) if pd.notna(fuel_i) else None,
+            "Value.Fuel.I": 1 if pd.notna(fuel_i) else None,
             "Unit.Fuel.I": None,
             "Tech": tech,
             "Tech.Name": parse_tech_name(tech),
@@ -783,6 +907,7 @@ def update_model_base_year_secondary(og_data, workbook):
 
     df_final = pd.DataFrame(records)
 
+    # Clear and write to the Excel sheet
     ws = workbook["Secondary"]
     ws.delete_rows(1, ws.max_row)
 
@@ -790,6 +915,72 @@ def update_model_base_year_secondary(og_data, workbook):
         ws.append(r)
 
     print("[Success] Sheet 'Secondary' in Base Year Model file updated.")
+
+
+
+# def update_model_base_year_secondary(og_data, workbook):
+#     """
+#     Updates the 'Secondary' sheet in the base year model Excel workbook
+#     using both 'InputActivityRatio' and 'OutputActivityRatio' data.
+#     Only includes technologies not starting with 'MIN' or 'RNW', and excludes fuels ending in '02'.
+#     Each row combines matching input/output records for the same technology and mode of operation.
+#     """
+#     if "InputActivityRatio" not in og_data or "OutputActivityRatio" not in og_data:
+#         print("[Warning] Missing one or both parameters: 'InputActivityRatio', 'OutputActivityRatio'.")
+#         return
+
+#     df_input = og_data["InputActivityRatio"]
+#     df_output = og_data["OutputActivityRatio"]
+
+#     df_input = df_input[
+#         (~df_input["TECHNOLOGY"].str.startswith(("MIN", "RNW"))) #&
+#         # (~df_input["FUEL"].str.endswith("02"))
+#     ]
+#     df_output = df_output[
+#         (~df_output["TECHNOLOGY"].str.startswith(("MIN", "RNW"))) &
+#         (~df_output["FUEL"].str.endswith("02"))
+#     ]
+
+#     input_grouped = df_input.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+#     output_grouped = df_output.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+
+#     merged = pd.merge(
+#         input_grouped, output_grouped,
+#         on=["TECHNOLOGY", "MODE_OF_OPERATION"],
+#         suffixes=("_I", "_O")
+#     )
+
+#     records = []
+#     for _, row in merged.iterrows():
+#         tech = row["TECHNOLOGY"]
+#         mode = int(row["MODE_OF_OPERATION"])
+#         fuel_i = row["FUEL_I"]
+#         fuel_o = row["FUEL_O"]
+
+#         record = {
+#             "Mode.Operation": mode,
+#             "Fuel.I": fuel_i,
+#             "Fuel.I.Name": parse_fuel_name(fuel_i),
+#             "Value.Fuel.I": 1,
+#             "Unit.Fuel.I": None,
+#             "Tech": tech,
+#             "Tech.Name": parse_tech_name(tech),
+#             "Fuel.O": fuel_o,
+#             "Fuel.O.Name": parse_fuel_name(fuel_o),
+#             "Value.Fuel.O": 1,
+#             "Unit.Fuel.O": None
+#         }
+#         records.append(record)
+
+#     df_final = pd.DataFrame(records)
+
+#     ws = workbook["Secondary"]
+#     ws.delete_rows(1, ws.max_row)
+
+#     for r in dataframe_to_rows(df_final, index=False, header=True):
+#         ws.append(r)
+
+#     print("[Success] Sheet 'Secondary' in Base Year Model file updated.")
 
 def update_model_base_year_demand_techs(og_data, workbook):
     """
@@ -1303,6 +1494,11 @@ def update_parametrization(og_data, output_excel_path, input_excel_path):
         output_excel_path=output_excel_path
     )
     
+    update_parametrization_daysplit(
+        df=og_data["DaySplit"],
+        output_excel_path=output_excel_path
+    )
+    
     print("[Success] Excel file 'Parametrization' updated.")
     print("-------------------------------------------------------------------------\n")
     
@@ -1322,6 +1518,21 @@ def update_projections(og_data, input_excel_path, output_excel_path):
 
     wb.save(output_excel_path)
     print("[Success] Excel file 'Projections' updated.")
+    print("-------------------------------------------------------------------------\n")
+
+def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
+    """
+    Coordinates update of A-Xtra_Emissions.xlsx.
+    Applies updates to GHGs and Externalities sheets.
+    """
+    os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
+    wb = load_workbook(input_excel_path)
+
+    update_xtra_emissions_ghg(og_data, wb)
+    update_xtra_emissions_externalities(og_data, wb)
+
+    wb.save(output_excel_path)
+    print("[Success] Excel file 'Xtra Emissions' updated.")
     print("-------------------------------------------------------------------------\n")
 
 def update_yaml_structure(og_data, yaml_path):

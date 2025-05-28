@@ -557,6 +557,9 @@ tech_param_list_yearly_timeslices_df.insert(0, 'Timeslices', np.nan)
 #
 tech_param_list_yearly_capacities_df = deepcopy(tech_param_list_yearly_timeslices_df)
 #
+tech_param_list_yearly_daysplit_df = pd.DataFrame(columns=tech_param_list_all_yearly_df_headers)
+tech_param_list_yearly_daysplit_df.insert(0, 'DAILYTIMEBRACKET', np.nan)
+#
 tech_param_list_yearly_variablecost_df = deepcopy(tech_param_list_yearly_primary_df)
 tech_param_list_yearly_variablecost_df.insert(0, 'Mode.Operation', np.nan)
 #
@@ -799,6 +802,24 @@ if params['xtra_scen']['Timeslice'] == 'Some':
     new_rows_yearly_capacities_df = pd.DataFrame(accumulated_rows_yearly_capacities)
     tech_param_list_yearly_capacities_df = pd.concat([tech_param_list_yearly_capacities_df, new_rows_yearly_capacities_df], ignore_index=True)
 #---------------------------------------------------------------------------------------------------#
+# DaySplit timeslices
+accumulated_rows_yearly_daysplit = []
+if params['xtra_scen']['Timeslice'] == 'Some':
+    # Second part: For yearly primary parameters            
+    # for p in range(len(codes_list_techs_primary)):
+    for dtb in params['xtra_scen']['DailyTimeBracket']:
+        # if tech_param_list_primary[p] == 'YearSplit':
+        accumulated_rows_yearly_daysplit.append({
+            'DAILYTIMEBRACKET': dtb,
+            'Parameter.ID': p + 1,
+            'Parameter': 'DaySplit',
+            'Projection.Parameter': 0  # Assuming this is a constant value for all rows
+        })
+                
+    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
+    new_rows_yearly_daysplit_df = pd.DataFrame(accumulated_rows_yearly_daysplit)
+    tech_param_list_yearly_daysplit_df = pd.concat([tech_param_list_yearly_daysplit_df, new_rows_yearly_daysplit_df], ignore_index=True)
+#---------------------------------------------------------------------------------------------------#
 
 #---------------------------------------------------------------------------------------------------#
 # Secondary Techs
@@ -903,24 +924,7 @@ if params['xtra_scen']['Timeslice'] == 'Some':
     # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
     new_rows_yearly_timeslices_df = pd.DataFrame(accumulated_rows_yearly_variablecost)
     tech_param_list_yearly_variablecost_df = pd.concat([tech_param_list_yearly_variablecost_df, new_rows_yearly_timeslices_df], ignore_index=True)
-#---------------------------------------------------------------------------------------------------#
-# YearSplit timeslices
-accumulated_rows_yearly_capacities = []
-if params['xtra_scen']['Timeslice'] == 'Some':   
-    # For yearly secondary parameters
-    # for p in range(len(tech_param_list_secondary)):
-    for ts in params['xtra_scen']['Timeslices']:
-        # if tech_param_list_secondary[p] == 'YearSplit':
-        accumulated_rows_yearly_capacities.append({
-            'Timeslices': ts,
-            'Parameter.ID': p + 1,
-            'Parameter': 'YearSplit',
-            'Projection.Parameter': 0  # Assuming this is a constant value for all rows
-        })
-                
-    # Convert the accumulated rows for yearly secondary parameters into a DataFrame and concatenate
-    new_rows_yearly_capacities_df = pd.DataFrame(accumulated_rows_yearly_capacities)
-    tech_param_list_yearly_capacities_df = pd.concat([tech_param_list_yearly_capacities_df, new_rows_yearly_capacities_df], ignore_index=True)
+
 #---------------------------------------------------------------------------------------------------#
 # Demand Techs (simple)
 
@@ -1635,7 +1639,8 @@ tech_param_list_yearly_primary_df = tech_param_list_yearly_primary_df.replace(np
 tech_param_list_yearly_secondary_df = tech_param_list_yearly_secondary_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)
-tech_param_list_yearly_variablecost_df = tech_param_list_yearly_variablecost_df.replace(np.nan, '', regex=True)                                                                                                                                                                                                                       
+tech_param_list_yearly_variablecost_df = tech_param_list_yearly_variablecost_df.replace(np.nan, '', regex=True) 
+tech_param_list_yearly_daysplit_df = tech_param_list_yearly_daysplit_df.replace(np.nan, '', regex=True)                                                                                                                                                                                                                       
 tech_param_list_yearly_demands_df = tech_param_list_yearly_demands_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_disttrn_df = tech_param_list_yearly_disttrn_df.replace(np.nan, '', regex=True)
 tech_param_list_yearly_trn_df = tech_param_list_yearly_trn_df.replace(np.nan, '', regex=True)
@@ -1650,9 +1655,11 @@ else:
     tech_param_list_yearly_timeslices_df = tech_param_list_yearly_timeslices_df.replace(np.nan, '', regex=True)
     tech_param_list_yearly_capacities_df = tech_param_list_yearly_capacities_df.replace(np.nan, '', regex=True)
     tech_param_list_yearly_variablecost_df = tech_param_list_yearly_variablecost_df.replace(np.nan, '', regex=True)
+    tech_param_list_yearly_daysplit_df = tech_param_list_yearly_daysplit_df.replace(np.nan, '', regex=True)
     tech_param_list_dfs = [ tech_param_list_all_notyearly_df, tech_param_list_yearly_primary_df ,
                             tech_param_list_yearly_secondary_df, tech_param_list_yearly_timeslices_df,
-                            tech_param_list_yearly_capacities_df, tech_param_list_yearly_variablecost_df,
+                            tech_param_list_yearly_capacities_df, tech_param_list_yearly_daysplit_df,
+                            tech_param_list_yearly_variablecost_df,
                             tech_param_list_yearly_demands_df , tech_param_list_yearly_disttrn_df, 
                             tech_param_list_yearly_trn_df, tech_param_list_yearly_trngroups_df ]
 tech_param_list_dfs_names = params['tech_param_list_dfs_names']
