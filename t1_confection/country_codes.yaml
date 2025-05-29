@@ -1,0 +1,60 @@
+# country_codes.yaml
+# Structure divided into two main sections: countries and technology parameters
+
+# List of country codes
+countries:
+  - CRI       # Costa Rica, default region XX
+  - PAN       # Panama, default region XX
+
+# Technology parameters
+# Renewable transmission technologies
+#Existing renewable transmission technologies
+RNWTRN:
+  CapacityToActivityUnit: 31.536
+  OperationalLife: 20
+  CapitalCost: 100
+  FixedCost: 4
+  ResidualCapacity: 5
+  TotalAnnualMaxCapacityInvestment: 5
+#Repowered renewable transmission technologies  
+RNWRPO:
+  CapacityToActivityUnit: 31.536
+  OperationalLife: 20
+  CapitalCost: 100
+  FixedCost: 4
+  ResidualCapacity: 5
+  TotalAnnualMaxCapacityInvestment: 5
+#New lines of renewable transmission technologies  
+RNWNLI:
+  CapacityToActivityUnit: 31.536
+  OperationalLife: 20
+  CapitalCost: 100
+  FixedCost: 4
+  ResidualCapacity: 5
+  TotalAnnualMaxCapacityInvestment: 5
+  
+# Non-renewable transmission technologies
+#Existing non-renewable transmission technologies
+PWRTRN:
+  CapacityToActivityUnit: 31.536
+  OperationalLife: 20
+  CapitalCost: 100
+  FixedCost: 4
+  ResidualCapacity: 5
+  TotalAnnualMaxCapacityInvestment: 5
+#Repowered non-renewable transmission technologies  
+TRNRPO:
+  CapacityToActivityUnit: 31.536
+  OperationalLife: 20
+  CapitalCost: 100
+  FixedCost: 4
+  ResidualCapacity: 5
+  TotalAnnualMaxCapacityInvestment: 5
+#New lines of non-renewable transmission technologies  
+TRNNLI:
+  CapacityToActivityUnit: 31.536
+  OperationalLife: 20
+  CapitalCost: 100
+  FixedCost: 4
+  ResidualCapacity: 5
+  TotalAnnualMaxCapacityInvestment: 5
