@@ -11,6 +11,8 @@ import yaml
 import subprocess
 import sys
 import platform  
+import shutil
+import time
 
 ########################################################################################
 def sort_csv_files_in_folder(folder_path):
@@ -128,7 +130,7 @@ def run_otoole_conversion(base_output_path, scenario_name, params):
     """
     # Step 1: Define paths
     input_folder = os.path.join(base_output_path, scenario_name)
-    scenario_exec_dir = os.path.join(params['executables'], scenario_name)
+    scenario_exec_dir = os.path.join(params['executables'], scenario_name + '_0')
     output_file = os.path.join(scenario_exec_dir, f"{scenario_name}_0.txt")
     config_file = os.path.join(params['Miscellaneous'], params['otoole_config'])
 
@@ -166,8 +168,8 @@ def run_preprocessing_script(params, scenario_name):
     """
     # Step 1: Define paths
     script_path = os.path.join(params['Miscellaneous'], params['preprocess_data'])
-    input_file = os.path.join(params['executables'], scenario_name, f"{scenario_name}_0.txt")
-    output_file = os.path.join(params['executables'], scenario_name, f"{params['preprocess_data_name']}{scenario_name}_0.txt")
+    input_file = os.path.join(params['executables'], scenario_name + '_0', f"{scenario_name}_0.txt")
+    output_file = os.path.join(params['executables'], scenario_name + '_0', f"{params['preprocess_data_name']}{scenario_name}_0.txt")
 
     # Step 2: Construct command
     command = [sys.executable, script_path, input_file, output_file]
@@ -226,12 +228,12 @@ def get_config_main_path(full_path, base_folder='config_main_files'):
 
 def main_executer(params, scenario_name):
     
-    folder_scenario = os.path.join(params['executables'], scenario_name)                             
+    folder_scenario = os.path.join(params['executables'], scenario_name + '_0')                             
     
     # Constructing paths for the data file and the output file, adapting for file system differences
     data_file = os.path.join(folder_scenario, params['preprocess_data_name'] + scenario_name + '_0')
     output_file = os.path.join(folder_scenario, params['preprocess_data_name'] + scenario_name + '_0' + params['output_files'])
-    this_case = scenario_name + '_0.tx'
+    this_case = scenario_name + '_0.txt'
 
     # Determining the solver based on parameters
     solver = params['solver']
@@ -279,10 +281,13 @@ def main_executer(params, scenario_name):
     for cmd in commands:
         subprocess.run(cmd, shell=True, check=True)
         
+    print(f'✅ Scenario {scenario_name}_0 solve successfully.')
+    print('\n#------------------------------------------------------------------------------#')
 
     # Paths for converting outputs
     file_path_conv_format = os.path.join(params['Miscellaneous'], params['conv_format'])
-    file_path_template = os.path.join(params['Miscellaneous'], params['templates'])
+    # file_path_template = os.path.join(params['Miscellaneous'], params['templates'])
+    file_path_template = os.path.join(params['A2_output_otoole'], scenario_name)
     file_path_outputs = os.path.join(folder_scenario, params['outputs'])
 
     # Converting outputs from .sol to csv format
@@ -292,7 +297,7 @@ def main_executer(params, scenario_name):
 
     elif solver in ['cbc', 'cplex']:
                                                                                                                     
-        str_outputs = f'otoole results {solver} csv {output_file}.sol {file_path_outputs} csv {file_path_template} {file_path_conv_format}'
+        str_outputs = f'otoole results {solver} csv {output_file}.sol {file_path_outputs} csv {file_path_template} {file_path_conv_format} 2> {output_file}.log'
         subprocess.run(str_outputs, shell=True, check=True)
     
     # Module to concatenate csvs otoole outputs
@@ -301,9 +306,95 @@ def main_executer(params, scenario_name):
         script_concate_csv = os.path.join(file_conca_csvs, params['concat_csvs'])
         str_otoole_concate_csv = f'python -u {script_concate_csv} {this_case} 1'  # last int is the ID tier
         subprocess.run(str_otoole_concate_csv, shell=True, check=True)
+        print(f'✅ Concatenated outputs to {scenario_name}_0_Output.csv successfully.')
+        print('\n#------------------------------------------------------------------------------#')
+
+def delete_files(file, data_file, solver):
+    # Delete files
+    if file:
+        shutil.os.remove(file)
+        shutil.os.remove(data_file)
+    
+    # Check if the .sol file exists and is empty
+    log_file = file.replace('.sol', '.log')
+    if os.path.exists(log_file) and os.path.getsize(log_file) == 0:
+        if os.path.exists(log_file):
+            os.remove(log_file)
+    
+    if solver == 'glpk':
+        shutil.os.remove(file.replace('sol', 'glp'))        
+    else:
+        shutil.os.remove(file.replace('sol', 'lp'))
+    
+    # Delete log files when solver is 'cplex' and del_files is True
+    if solver == 'cplex':
+        for filename in ['cplex.log', 'clone1.log', 'clone2.log']:
+            if os.path.exists(filename):
+                os.remove(filename)
+
+def read_csv_files(input_dir):
+    """Reads all CSV files in the given directory and returns a dictionary of DataFrames."""
+    data_dict = {}
+    for filename in os.listdir(input_dir):
+        if filename.endswith(".csv"):
+            file_path = os.path.join(input_dir, filename)
+            df = pd.read_csv(file_path)
+            key = os.path.splitext(filename)[0]
+            data_dict[key] = df
+    return data_dict
+
+def generate_combined_input_file(input_folder, output_folder, scenario_name):
+    """
+    Reads CSVs from input_folder, filters out metadata keys, renames VALUE columns by key,
+    concatenates all non-empty DataFrames, orders columns, and saves the result to a CSV file.
+    """
+    keys_sets_delete = ['REGION', 'YEAR', 'TECHNOLOGY', 'FUEL', 'EMISSION', 'MODE_OF_OPERATION',
+                        'TIMESLICES', 'STORAGE', 'SEASON', 'DAYTYPE', 'DAILYTIMEBRACKET']
+
+    inputs_dataframes = []
+    for filename in os.listdir(input_folder):
+        if not filename.endswith(".csv"):
+            continue
+        key = filename.replace(".csv", "")
+        if key in keys_sets_delete:
+            continue
+        path = os.path.join(input_folder, filename)
+        df = pd.read_csv(path)
+        if df.empty or 'VALUE' not in df.columns:
+            continue
+        df = df.rename(columns={'VALUE': key})
+        inputs_dataframes.append(df)
+
+    if not inputs_dataframes:
+        print("[Warning] No valid dataframes found to concatenate.")
+        return None, None
+
+    # Concatenate all non-empty dataframes
+    inputs_data = pd.concat(inputs_dataframes, ignore_index=True, sort=False)
+
+    # Reorder columns
+    present_keys = [col for col in keys_sets_delete if col in inputs_data.columns]
+    other_columns = sorted([col for col in inputs_data.columns if col not in present_keys])
+    inputs_data = inputs_data[present_keys + other_columns]
+
+    # Save to CSV
+    os.makedirs(output_folder, exist_ok=True)
+    output_path = os.path.join(output_folder, f"{scenario_name}_Input.csv")
+    inputs_data.to_csv(output_path, index=False)
+
+    print(f'✅ Concatenated inputs to {scenario_name}_Input.csv successfully.')
+    print('\n#------------------------------------------------------------------------------#')
+
+    return output_path, inputs_data.head()
+
+
+
 
 ########################################################################################
 if __name__ == "__main__":
+    # Start timer
+    start1 = time.time()
+    
     # Load params from YAML
     with open('MOMF_T1_AB.yaml', 'r') as f:
         params = yaml.safe_load(f)
@@ -332,4 +423,49 @@ if __name__ == "__main__":
         
         run_preprocessing_script(params, scenario_name)
 
+
+        input_folder = os.path.join(base_output_path, scenario_name)
+        output_folder = os.path.join(params['executables'], scenario_name + '_0')
+        
+        # List any available files for preview (just to verify setup)
+        os.makedirs(input_folder, exist_ok=True)
+        os.makedirs(output_folder, exist_ok=True)
+        
+        # Concatenate inputs
+        generate_combined_input_file(input_folder, output_folder, scenario_name + '_0')
+
+    
+        #
         main_executer(params, scenario_name)
+        
+        # Delete Outputs folder with otoole csvs files
+        if params['del_files']:
+            # Delete Outputs folder with otoole csvs files
+            folder_scenario = os.path.join(params['executables'], scenario_name + '_0') 
+            outputs_otoole_csvs = os.path.join(folder_scenario, params['outputs'])
+            data_file = os.path.join(folder_scenario, scenario_name + '_0' + '.txt')
+            sol_file = os.path.join(folder_scenario, params['preprocess_data_name'] + scenario_name + '_0' + params['output_files'] + '.sol')
+            if os.path.exists(outputs_otoole_csvs):
+                shutil.rmtree(outputs_otoole_csvs)
+        
+            # Delete glp, lp, txt and sol files
+            if params['solver'] in ['glpk', 'cbc', 'cplex']:
+                delete_files(sol_file, data_file, params['solver'])
+            
+            print(f'✅ Delete intermediate files to scenario {scenario_name}_0 successfully.')
+            print('\n#------------------------------------------------------------------------------#')
+
+
+
+    end_1 = time.time()   
+    time_elapsed_1 = -start1 + end_1
+    print( str( time_elapsed_1 ) + ' seconds /', str( time_elapsed_1/60 ) + ' minutes' )
+    
+    
+    
+    
+    
+    print('*: For all effects, we have finished the work of this script.')
+
+            
+

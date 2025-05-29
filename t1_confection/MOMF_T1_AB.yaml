@@ -6,7 +6,7 @@ A2_output_otoole: 'A2_Outputs_Params_otoole'
 Miscellaneous: 'Miscellaneous'
 templates: 'templates'
 executables: 'Executables'
-outputs: 'outputs'
+outputs: 'Outputs'
 
 # Files
 otoole_config: 'conversion_format.yaml'
@@ -31,3 +31,6 @@ iteration_time: 60
 
 # For CPLEX use
 cplex_threads: 2
+
+# For delete intermediate files
+del_files: True
