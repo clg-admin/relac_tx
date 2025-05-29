@@ -434,7 +434,7 @@ def update_parametrization_daysplit(df, output_excel_path):
 
         record = {
             "DAILYTIMEBRACKET": dailytimebracket,
-            "Parameter.ID": 15,
+            "Parameter.ID": 12,
             "Parameter": "DaySplit",
             "Unit": None,
             "Projection.Mode": "User defined",
@@ -530,7 +530,7 @@ def update_parametrization_primary_secondary_demand_techs(og_data, output_excel_
         "TotalAnnualMaxCapacity", "TotalTechnologyAnnualActivityUpperLimit",
         "TotalTechnologyAnnualActivityLowerLimit", "TotalAnnualMinCapacityInvestment",
         "AvailabilityFactor", "ReserveMarginTagFuel",
-        "ReserveMarginTagTechnology", "TotalAnnualMaxCapacityInvestment", "VariableCost"
+        "ReserveMarginTagTechnology", "TotalAnnualMaxCapacityInvestment"
     ]
 
     PARAMETER_IDS = {name: idx + 1 for idx, name in enumerate(PARAMETERS)}
