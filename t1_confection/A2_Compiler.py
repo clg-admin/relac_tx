@@ -1286,10 +1286,157 @@ for param, rows in accumulated_data_by_param.items():
         if param not in overall_param_df_dict_ndp:
             overall_param_df_dict_ndp[param] = pd.DataFrame(columns=Wide_Param_Header)
         overall_param_df_dict_ndp[param] = pd.concat([overall_param_df_dict_ndp[param], new_rows_df], ignore_index=True)
+#------------------------------------------------------------------------------
+print('8 - Include Storage.')
+Storages = pd.ExcelFile(params['A2_extra_inputs'] + params['Xtra_Storage'])
+# Emissions.sheet_names # see all sheet names // this only need thes wide format
+xtra_storage_fixed_hori_param = Storages.parse( params['xs_1'] )
+xtra_storage_capitalcost = Storages.parse( params['xs_2'] )
+xtra_storage_technology_sto = Storages.parse( params['xs_3'] )
+
+#
+df_StorageLevelStart = pd.DataFrame( columns = Wide_Param_Header )
+df_OperationalLifeStorage = pd.DataFrame( columns = Wide_Param_Header )
+
+storagelevelstart_data = []
+operationallifestorage_data = []
+
+this_df = xtra_storage_fixed_hori_param
+df_index_list = this_df.index.tolist()
+#
+for n in range( len( df_index_list ) ):
+    this_storage = deepcopy(this_df.loc[n, 'STORAGE'])
+    this_parameter_storage = deepcopy(this_df.loc[n, 'Parameter'])
+    these_s_values = deepcopy(this_df.loc[n, 'Value'])
+    if this_parameter_storage == 'StorageLevelStart':
+        new_row = {
+            'PARAMETER': this_parameter_storage,
+            'Scenario': other_setup_params['Main_Scenario'],
+            'REGION': other_setup_params['Region'],
+            'STORAGE': this_storage,
+            'Value': these_s_values
+        }
+        storagelevelstart_data.append(new_row)
+    
+    elif this_parameter_storage == 'OperationalLifeStorage':
+        new_row = {
+            'PARAMETER': this_parameter_storage,
+            'Scenario': other_setup_params['Main_Scenario'],
+            'REGION': other_setup_params['Region'],
+            'STORAGE': this_storage,
+            'Value': these_s_values
+        }
+        operationallifestorage_data.append(new_row)
+
+if storagelevelstart_data:  # Ensure there's something to append
+    new_storagelevelstart_df = pd.DataFrame(storagelevelstart_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        df_StorageLevelStart = pd.concat([df_StorageLevelStart, new_storagelevelstart_df], ignore_index=True)
+if operationallifestorage_data:  # Ensure there's something to append
+    new_operationallifestorage_df = pd.DataFrame(operationallifestorage_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        df_OperationalLifeStorage = pd.concat([df_OperationalLifeStorage, new_operationallifestorage_df], ignore_index=True)
+
+#
+df_CapitalCostStorage = pd.DataFrame( columns = Wide_Param_Header )
+
+capitalcoststorage_data = []
+
+this_df = xtra_storage_capitalcost
+df_index_list = this_df.index.tolist()
+#
+for n in range( len( df_index_list ) ):
+    this_storage = deepcopy(this_df.loc[n, 'STORAGE'])
+    # Loop through the time range vector
+    for y in range(len(time_range_vector)):
+        this_value_storage = deepcopy(this_df.loc[n, time_range_vector[y]])
+        # Create a dictionary for the current iteration
+        new_row = {
+            'PARAMETER': 'CapitalCostStorage',
+            'Scenario': other_setup_params['Main_Scenario'],
+            'REGION': other_setup_params['Region'],
+            'STORAGE': this_storage,
+            'YEAR': time_range_vector[y],
+            'Value': this_value_storage
+        }
+        # Add the dictionary to the list
+        capitalcoststorage_data.append(new_row)
+
+if capitalcoststorage_data:  # Ensure there's something to append
+    new_capitalcoststorage_df = pd.DataFrame(capitalcoststorage_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        df_CapitalCostStorage = pd.concat([df_CapitalCostStorage, new_capitalcoststorage_df], ignore_index=True)
+
+#
+df_TechnologyToStorage = pd.DataFrame( columns = Wide_Param_Header )
+df_TechnologyFromStorage = pd.DataFrame( columns = Wide_Param_Header )
+
+technologytostorage_data = []
+technologyfromstorage_data = []
+
+this_df = xtra_storage_technology_sto
+df_index_list = this_df.index.tolist()
+#
+for n in range( len( df_index_list ) ):
+    this_tech = deepcopy(this_df.loc[n, 'TECHNOLOGY'])
+    this_modeofoperation= deepcopy(this_df.loc[n, 'MODE_OF_OPERATION'])
+    this_storage = deepcopy(this_df.loc[n, 'STORAGE'])
+    this_parameter_storage = deepcopy(this_df.loc[n, 'Parameter'])
+    this_value_storage = deepcopy(this_df.loc[n, 'Value.STORAGE'])
+    if this_parameter_storage == 'TechnologyToStorage':
+        # Create a dictionary for the current iteration
+        new_row = {
+            'PARAMETER': this_parameter_storage,
+            'Scenario': other_setup_params['Main_Scenario'],
+            'REGION': other_setup_params['Region'],
+            'MODE_OF_OPERATION': this_modeofoperation,
+            'TECHNOLOGY': this_tech,
+            'STORAGE': this_storage,
+            'Value': this_value_storage
+        }
+        # Add the dictionary to the list
+        technologytostorage_data.append(new_row)
+
+    elif this_parameter_storage == 'TechnologyFromStorage':
+        # Create a dictionary for the current iteration
+        new_row = {
+            'PARAMETER': this_parameter_storage,
+            'Scenario': other_setup_params['Main_Scenario'],
+            'REGION': other_setup_params['Region'],
+            'MODE_OF_OPERATION': this_modeofoperation,
+            'TECHNOLOGY': this_tech,
+            'STORAGE': this_storage,
+            'Value': this_value_storage
+        }
+        # Add the dictionary to the list
+        technologyfromstorage_data.append(new_row)
+
+if technologytostorage_data:  # Ensure there's something to append
+    new_technologytostorage_df = pd.DataFrame(technologytostorage_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        df_TechnologyToStorage = pd.concat([df_TechnologyToStorage, new_technologytostorage_df], ignore_index=True)
+if technologyfromstorage_data:  # Ensure there's something to append
+    new_technologyfromstorage_df = pd.DataFrame(technologyfromstorage_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        df_TechnologyFromStorage = pd.concat([df_TechnologyFromStorage, new_technologyfromstorage_df], ignore_index=True)
+
+
+
+# Update the overall_param_df_dict
+overall_param_df_dict['StorageLevelStart'] = df_StorageLevelStart
+overall_param_df_dict['OperationalLifeStorage'] = df_OperationalLifeStorage  
+overall_param_df_dict['CapitalCostStorage'] = df_CapitalCostStorage
+overall_param_df_dict['TechnologyToStorage'] = df_TechnologyToStorage  
+overall_param_df_dict['TechnologyFromStorage'] = df_TechnologyFromStorage  
 # %%
 #------------------------------------------------------------------------------
 if params['xtra_scen']['Timeslice'] == 'Some':
-    print('7.a - Include Conversions parameters.')
+    print('9 - Include Conversions parameters.')
     #
     df_Conversions = pd.DataFrame( columns = Wide_Param_Header )  
     accumulated_data_by_param_conversion = {}
