@@ -110,10 +110,11 @@ def write_sheet(sheet_name, records, all_years, output_excel_path):
 def parse_tech_name(tech):
     """
     Returns a descriptive name for a technology code with structure interpretation.
-    Adds notes based on investability and handles special cases for transmission links.
+    Handles special formats for TRN, SDS, LDS technologies and adds investability notes.
     """
     main_code = tech[0:3]
 
+    # Handle transmission interconnection codes
     if main_code == "TRN" and len(tech) >= 13:
         iso1 = tech[3:6]
         region1 = tech[6:8]
@@ -122,36 +123,48 @@ def parse_tech_name(tech):
         country1 = iso_country_map.get(iso1, f"Unknown ({iso1})")
         country2 = iso_country_map.get(iso2, f"Unknown ({iso2})")
         return f"Transmission interconnection from {country1}, region {region1} to {country2}, region {region2}"
+    
+    # Handle transmission interconnection codes
+    if (main_code == "SDS" or main_code == "LDS") and len(tech) <= 10:
+        iso1 = tech[3:6]
+        region1 = tech[6:8]
+        final_code = tech[8:10]
+        storage_code = code_to_energy.get(main_code, "specific technology")
+        country1 = iso_country_map.get(iso1, f"Unknown ({iso1})")
+        if final_code == "01":
+            last_code = "(can be invested)"
+        return f"{storage_code} {country1}, region {region1} {last_code} "
 
     iso = tech[6:9]
     region = tech[9:11]
     country = iso_country_map.get(iso, f"Unknown ({iso})")
     sub_code = tech[3:6]
-
     main_desc = code_to_energy.get(main_code, "General technology")
     sub_desc = code_to_energy.get(sub_code, "specific technology")
 
-    if main_desc != sub_desc:
-        base = f"{sub_desc} ({main_desc})"
-    else:
-        base = sub_desc
-
+    # Use consistent naming base
+    base = f"{sub_desc} ({main_desc})" if main_desc != sub_desc else sub_desc
     name = f"{base} {country}"
 
-    # Add region info except for mining
+    # Add region information (omit for MIN)
     if not tech.startswith("MIN") and region != "XX":
         name += f", region {region}"
     elif region == "XX":
         name += f", region XX"
 
-    # Add investment status suffix for PWR
+    # Add investability note for PWR ending in 00 or 01
     if tech.startswith("PWR"):
         if tech.endswith("00"):
             name += " (can not be invested)"
         elif tech.endswith("01"):
             name += " (can be invested)"
 
+    # Add investability note for SDS or LDS techs ending in 01
+    if any(code in tech for code in ["SDS", "LDS"]) and tech.endswith("01"):
+        name += " (Investable technology)"
+
     return name
+
 
 def parse_fuel_name(fuel):
     """
@@ -807,6 +820,8 @@ def update_model_base_year_primary(og_data, workbook):
 
     print("[Success] Sheet 'Primary' in Base Year Model file updated.")
 
+
+
 def update_model_base_year_secondary(og_data, workbook):
     """
     Updates the 'Secondary' sheet in the base year model Excel workbook
@@ -882,6 +897,162 @@ def update_model_base_year_secondary(og_data, workbook):
         # Concatenate merged_extra with merged
         merged = pd.concat([merged, merged_extra], ignore_index=True)
 
+    # Handle 'PWRLDS' techs missing input data
+    techs_output_only = df_output[
+        df_output["TECHNOLOGY"].str.startswith("PWRLDS") 
+    ].copy()
+
+    if not techs_output_only.empty:
+        techs_output_only = techs_output_only.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+        techs_output_only["VALUE_O"] = techs_output_only["VALUE"]
+        techs_output_only["VALUE_I"] = None
+        techs_output_only["FUEL_I"] = None
+
+        merged_extra = techs_output_only.rename(columns={
+            "TECHNOLOGY": "TECHNOLOGY",
+            "MODE_OF_OPERATION": "MODE_OF_OPERATION",
+            "FUEL": "FUEL_O"
+        })[["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]]
+
+        # Add missing columns explicitly to avoid future warning
+        required_columns = ["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]
+        for col in required_columns:
+            if col not in merged_extra.columns:
+                merged_extra[col] = pd.NA
+
+        # Set proper data types to avoid future warnings
+        merged_extra = merged_extra.astype({
+            "TECHNOLOGY": "string",
+            "MODE_OF_OPERATION": "Int64",
+            "FUEL_I": "string",
+            "VALUE_I": "float",
+            "FUEL_O": "string",
+            "VALUE_O": "float"
+        }, errors="ignore")
+
+        # Reorder columns
+        merged_extra = merged_extra[required_columns]
+
+        # Concatenate merged_extra with merged
+        merged = pd.concat([merged, merged_extra], ignore_index=True)
+
+    # Handle 'PWRSDS' techs missing input data
+    techs_output_only = df_output[
+        df_output["TECHNOLOGY"].str.startswith("PWRSDS")
+    ].copy()
+
+    if not techs_output_only.empty:
+        techs_output_only = techs_output_only.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+        techs_output_only["VALUE_O"] = techs_output_only["VALUE"]
+        techs_output_only["VALUE_I"] = None
+        techs_output_only["FUEL_I"] = None
+
+        merged_extra = techs_output_only.rename(columns={
+            "TECHNOLOGY": "TECHNOLOGY",
+            "MODE_OF_OPERATION": "MODE_OF_OPERATION",
+            "FUEL": "FUEL_O"
+        })[["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]]
+
+        # Add missing columns explicitly to avoid future warning
+        required_columns = ["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]
+        for col in required_columns:
+            if col not in merged_extra.columns:
+                merged_extra[col] = pd.NA
+
+        # Set proper data types to avoid future warnings
+        merged_extra = merged_extra.astype({
+            "TECHNOLOGY": "string",
+            "MODE_OF_OPERATION": "Int64",
+            "FUEL_I": "string",
+            "VALUE_I": "float",
+            "FUEL_O": "string",
+            "VALUE_O": "float"
+        }, errors="ignore")
+
+        # Reorder columns
+        merged_extra = merged_extra[required_columns]
+
+        # Concatenate merged_extra with merged
+        merged = pd.concat([merged, merged_extra], ignore_index=True)
+
+    # Handle 'PWRLDS' techs missing input data
+    techs_output_only = df_input[
+        df_input["TECHNOLOGY"].str.startswith("PWRLDS")
+    ].copy()
+
+    if not techs_output_only.empty:
+        techs_output_only = techs_output_only.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+        techs_output_only["VALUE_O"] = None
+        techs_output_only["VALUE_I"] = techs_output_only["VALUE"]
+        techs_output_only["FUEL_O"] = None
+
+        merged_extra = techs_output_only.rename(columns={
+            "TECHNOLOGY": "TECHNOLOGY",
+            "MODE_OF_OPERATION": "MODE_OF_OPERATION",
+            "FUEL": "FUEL_I"
+        })[["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]]
+
+        # Add missing columns explicitly to avoid future warning
+        required_columns = ["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]
+        for col in required_columns:
+            if col not in merged_extra.columns:
+                merged_extra[col] = pd.NA
+
+        # Set proper data types to avoid future warnings
+        merged_extra = merged_extra.astype({
+            "TECHNOLOGY": "string",
+            "MODE_OF_OPERATION": "Int64",
+            "FUEL_I": "string",
+            "VALUE_I": "float",
+            "FUEL_O": "string",
+            "VALUE_O": "float"
+        }, errors="ignore")
+
+        # Reorder columns
+        merged_extra = merged_extra[required_columns]
+
+        # Concatenate merged_extra with merged
+        merged = pd.concat([merged, merged_extra], ignore_index=True)
+
+    # Handle 'PWRSDS' techs missing input data
+    techs_output_only = df_input[
+        df_input["TECHNOLOGY"].str.startswith("PWRSDS")
+    ].copy()
+
+    if not techs_output_only.empty:
+        techs_output_only = techs_output_only.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
+        techs_output_only["VALUE_O"] = None
+        techs_output_only["VALUE_I"] = techs_output_only["VALUE"]
+        techs_output_only["FUEL_O"] = None
+
+        merged_extra = techs_output_only.rename(columns={
+            "TECHNOLOGY": "TECHNOLOGY",
+            "MODE_OF_OPERATION": "MODE_OF_OPERATION",
+            "FUEL": "FUEL_I"
+        })[["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]]
+
+        # Add missing columns explicitly to avoid future warning
+        required_columns = ["TECHNOLOGY", "MODE_OF_OPERATION", "FUEL_I", "VALUE_I", "FUEL_O", "VALUE_O"]
+        for col in required_columns:
+            if col not in merged_extra.columns:
+                merged_extra[col] = pd.NA
+
+        # Set proper data types to avoid future warnings
+        merged_extra = merged_extra.astype({
+            "TECHNOLOGY": "string",
+            "MODE_OF_OPERATION": "Int64",
+            "FUEL_I": "string",
+            "VALUE_I": "float",
+            "FUEL_O": "string",
+            "VALUE_O": "float"
+        }, errors="ignore")
+
+        # Reorder columns
+        merged_extra = merged_extra[required_columns]
+
+        # Concatenate merged_extra with merged
+        merged = pd.concat([merged, merged_extra], ignore_index=True)
+
     # Build output records
     records = []
     for _, row in merged.iterrows():
@@ -899,8 +1070,8 @@ def update_model_base_year_secondary(og_data, workbook):
             "Tech": tech,
             "Tech.Name": parse_tech_name(tech),
             "Fuel.O": fuel_o,
-            "Fuel.O.Name": parse_fuel_name(fuel_o),
-            "Value.Fuel.O": 1,
+            "Fuel.O.Name": parse_fuel_name(fuel_o) if pd.notna(fuel_o) else None,
+            "Value.Fuel.O": 1 if pd.notna(fuel_o) else None,
             "Unit.Fuel.O": None
         }
         records.append(record)
@@ -915,72 +1086,7 @@ def update_model_base_year_secondary(og_data, workbook):
         ws.append(r)
 
     print("[Success] Sheet 'Secondary' in Base Year Model file updated.")
-
-
-
-# def update_model_base_year_secondary(og_data, workbook):
-#     """
-#     Updates the 'Secondary' sheet in the base year model Excel workbook
-#     using both 'InputActivityRatio' and 'OutputActivityRatio' data.
-#     Only includes technologies not starting with 'MIN' or 'RNW', and excludes fuels ending in '02'.
-#     Each row combines matching input/output records for the same technology and mode of operation.
-#     """
-#     if "InputActivityRatio" not in og_data or "OutputActivityRatio" not in og_data:
-#         print("[Warning] Missing one or both parameters: 'InputActivityRatio', 'OutputActivityRatio'.")
-#         return
-
-#     df_input = og_data["InputActivityRatio"]
-#     df_output = og_data["OutputActivityRatio"]
-
-#     df_input = df_input[
-#         (~df_input["TECHNOLOGY"].str.startswith(("MIN", "RNW"))) #&
-#         # (~df_input["FUEL"].str.endswith("02"))
-#     ]
-#     df_output = df_output[
-#         (~df_output["TECHNOLOGY"].str.startswith(("MIN", "RNW"))) &
-#         (~df_output["FUEL"].str.endswith("02"))
-#     ]
-
-#     input_grouped = df_input.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
-#     output_grouped = df_output.groupby(["TECHNOLOGY", "MODE_OF_OPERATION"], as_index=False).first()
-
-#     merged = pd.merge(
-#         input_grouped, output_grouped,
-#         on=["TECHNOLOGY", "MODE_OF_OPERATION"],
-#         suffixes=("_I", "_O")
-#     )
-
-#     records = []
-#     for _, row in merged.iterrows():
-#         tech = row["TECHNOLOGY"]
-#         mode = int(row["MODE_OF_OPERATION"])
-#         fuel_i = row["FUEL_I"]
-#         fuel_o = row["FUEL_O"]
-
-#         record = {
-#             "Mode.Operation": mode,
-#             "Fuel.I": fuel_i,
-#             "Fuel.I.Name": parse_fuel_name(fuel_i),
-#             "Value.Fuel.I": 1,
-#             "Unit.Fuel.I": None,
-#             "Tech": tech,
-#             "Tech.Name": parse_tech_name(tech),
-#             "Fuel.O": fuel_o,
-#             "Fuel.O.Name": parse_fuel_name(fuel_o),
-#             "Value.Fuel.O": 1,
-#             "Unit.Fuel.O": None
-#         }
-#         records.append(record)
-
-#     df_final = pd.DataFrame(records)
-
-#     ws = workbook["Secondary"]
-#     ws.delete_rows(1, ws.max_row)
-
-#     for r in dataframe_to_rows(df_final, index=False, header=True):
-#         ws.append(r)
-
-#     print("[Success] Sheet 'Secondary' in Base Year Model file updated.")
+    return df_input,df_output,merged
 
 def update_model_base_year_demand_techs(og_data, workbook):
     """
@@ -1265,7 +1371,165 @@ def update_projection_demand_techs(og_data, workbook):
         ws.append(r)
 
     print("[Success] Sheet 'Demand Techs' in Projections file updated.")
-    
+
+def update_xtra_storage_fixed_horizon_parameters(og_data, workbook):
+    """
+    Updates the 'Fixed Horizon Parameters' sheet in A-Xtra_Storage.xlsx
+    using StorageLevelStart and OperationalLifeStorage data.
+    Missing values are filled with default = 1. Includes storage name column.
+    """
+
+    parameters = [
+        ("StorageLevelStart", 1),
+        ("OperationalLifeStorage", 2),
+    ]
+
+    all_techs = set()
+    param_data = {}
+
+    for param_name, param_id in parameters:
+        if param_name not in og_data:
+            continue
+        df = og_data[param_name]
+        param_data[param_name] = {}
+        for _, row in df.iterrows():
+            tech = row["STORAGE"]
+            param_data[param_name][tech] = row["VALUE"]
+            all_techs.add(tech)
+
+    tech_ids = {tech: idx + 1 for idx, tech in enumerate(sorted(all_techs))}
+
+    rows = []
+    for tech in sorted(all_techs):
+        for param_name, param_id in parameters:
+            value = param_data.get(param_name, {}).get(tech, 1)
+            rows.append({
+                "STORAGE.ID": tech_ids[tech],
+                "STORAGE": tech,
+                "STORAGE.Name": parse_tech_name(tech),
+                "Parameter.ID": param_id,
+                "Parameter": param_name,
+                "Unit": None,
+                "Value": value
+            })
+
+    df_out = pd.DataFrame(rows).sort_values(by=["STORAGE", "Parameter.ID"])
+
+    ws = workbook["Fixed Horizon Parameters"]
+    ws.delete_rows(1, ws.max_row)
+
+    for r in dataframe_to_rows(df_out, index=False, header=True):
+        ws.append(r)
+
+    print("[Success] Sheet 'Fixed Horizon Parameters' in Extra Storage updated.")
+
+def update_xtra_storage_capital_cost_storage(og_data, workbook):
+    """
+    Updates the 'CapitalCostStorage' sheet in the A-Xtra_Storage Excel workbook
+    using the 'CapitalCostStorage' parameter. The sheet is updated with projection
+    mode and values per year per storage technology.
+    """
+    if "CapitalCostStorage" not in og_data:
+        print("[Warning] 'CapitalCostStorage' not found in OG_Input_Data.")
+        return workbook
+
+    df = og_data["CapitalCostStorage"]
+    df_grouped = df.groupby("STORAGE")
+
+    records = []
+    all_years = sorted(df["YEAR"].unique())
+    storage_ids = {name: idx + 1 for idx, name in enumerate(sorted(df["STORAGE"].unique()))}
+
+    for storage, group in df_grouped:
+        available_years = sorted(group["YEAR"].unique())
+        year_values = {int(row["YEAR"]): row["VALUE"] for _, row in group.iterrows()}
+        values = [year_values.get(y, np.nan) for y in available_years]
+
+        non_nan_count = sum(pd.notna(values))
+        if non_nan_count == 0:
+            mode = "EMPTY"
+        elif non_nan_count == 1:
+            mode = "Flat"
+        elif non_nan_count == len(values):
+            mode = "User defined"
+        else:
+            mode = "interpolation"
+
+        record = {
+            "STORAGE.ID": storage_ids[storage],
+            "STORAGE": storage,
+            "STORAGE.Name": parse_tech_name(storage),
+            "Parameter.ID": 1,
+            "Parameter": "CapitalCostStorage",
+            "Unit": None,
+            "Projection.Mode": mode,
+            "Projection.Parameter": None
+        }
+
+        for y in all_years:
+            record[int(y)] = year_values.get(y, np.nan)
+
+        records.append(record)
+
+    df_out = pd.DataFrame(records)
+    df_out = df_out[
+        ["STORAGE.ID", "STORAGE", "STORAGE.Name", "Parameter.ID", "Parameter",
+         "Unit", "Projection.Mode", "Projection.Parameter"] + all_years
+    ]
+
+    ws = workbook["CapitalCostStorage"]
+    ws.delete_rows(1, ws.max_row)
+
+    for r in dataframe_to_rows(df_out, index=False, header=True):
+        ws.append(r)
+
+    print("[Success] Sheet 'CapitalCostStorage' in Extra Storage updated.")
+    return workbook
+
+def update_xtra_storage_technology_storage(og_data, workbook):
+    """
+    Updates the 'TechnologyStorage' sheet in A-Xtra_Storage.xlsx
+    using TechnologyToStorage and TechnologyFromStorage parameters.
+    Combines both into a unified format with clear naming and direction.
+    """
+
+    if "TechnologyToStorage" not in og_data or "TechnologyFromStorage" not in og_data:
+        print("[Warning] Missing TechnologyToStorage or TechnologyFromStorage in OG_Input_Data.")
+        return workbook
+
+    df_to = og_data["TechnologyToStorage"].copy()
+    df_from = og_data["TechnologyFromStorage"].copy()
+
+    # Common fields
+    def prepare_df(df, param_name, param_id):
+        return pd.DataFrame({
+            "MODE_OF_OPERATION": df["MODE_OF_OPERATION"],
+            "TECHNOLOGY": df["TECHNOLOGY"],
+            "TECHNOLOGY.Name": df["TECHNOLOGY"].apply(parse_tech_name),
+            "STORAGE": df["STORAGE"],
+            "STORAGE.Name": df["STORAGE"].apply(parse_tech_name),
+            "Parameter.ID": param_id,
+            "Parameter": param_name,
+            "Value.STORAGE": df["VALUE"],
+            "Unit.STORAGE": None
+        })
+
+    df_to_prepared = prepare_df(df_to, "TechnologyToStorage", 1)
+    df_from_prepared = prepare_df(df_from, "TechnologyFromStorage", 2)
+
+    df_out = pd.concat([df_to_prepared, df_from_prepared], ignore_index=True)
+    df_out = df_out.sort_values(by=["TECHNOLOGY", "STORAGE", "MODE_OF_OPERATION"])
+
+    # Write to the Excel workbook
+    ws = workbook["TechnologyStorage"]
+    ws.delete_rows(1, ws.max_row)
+
+    for r in dataframe_to_rows(df_out, index=False, header=True):
+        ws.append(r)
+
+    print("[Success] Sheet 'TechnologyStorage' in Extra Storage updated.")
+    return workbook    
+
 def update_yaml_conversions(og_data, yaml_path):
     """
     Updates Conversionls, Conversionld, Conversionlh values in a YAML file using OG_Input_Data.
@@ -1426,7 +1690,7 @@ def update_model_base_year(og_data, input_excel_path, output_excel_path):
     update_model_base_year_primary(og_data, wb)
 
     # Update Secondary sheet
-    update_model_base_year_secondary(og_data, wb)
+    df_input,df_output,merged=update_model_base_year_secondary(og_data, wb)
 
     # Update Demand Techs sheet
     update_model_base_year_demand_techs(og_data, wb)
@@ -1435,6 +1699,7 @@ def update_model_base_year(og_data, input_excel_path, output_excel_path):
     wb.save(output_excel_path)
     print("[Success] Excel file 'Model Base Year' updated.")
     print("-------------------------------------------------------------------------\n")
+    return df_input,df_output,merged
 
 def update_demand(og_data, input_excel_path, output_excel_path):
     """
@@ -1535,6 +1800,21 @@ def update_xtra_emissions(og_data, input_excel_path, output_excel_path):
     print("[Success] Excel file 'Xtra Emissions' updated.")
     print("-------------------------------------------------------------------------\n")
 
+def update_xtra_storage(og_data, input_excel_path, output_excel_path):
+    """
+    Main function to update A-Xtra_Storage.xlsx using multiple storage-related parameters.
+    Calls individual update functions for each sheet.
+    """
+    os.makedirs(os.path.dirname(output_excel_path), exist_ok=True)
+    wb = load_workbook(input_excel_path)
+
+    update_xtra_storage_fixed_horizon_parameters(og_data, wb)
+    update_xtra_storage_capital_cost_storage(og_data, wb)
+    update_xtra_storage_technology_storage(og_data, wb)
+
+    wb.save(output_excel_path)
+    print("[Success] Excel file 'Xtra Storage' updated.")
+
 def update_yaml_structure(og_data, yaml_path):
     """
     Executes YAML updates using OG_Input_Data:
@@ -1552,9 +1832,6 @@ def update_yaml_structure(og_data, yaml_path):
 
 
 #--------------------------------------------------------------------------------------------------#
-
-
-
 def main():
     """Main execution function."""
     os.makedirs(INPUT_FOLDER, exist_ok=True)
@@ -1598,16 +1875,16 @@ def main():
         print(f"Failed to update extra emissions file: {e}")
 
     # File A-O_AR_Model_Base_Year.xlsx
-    try:
-        update_model_base_year(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Model_Base_Year.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_AR_Model_Base_Year.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"Failed to update model base year file: {e}")
+    # try:
+    df_input,df_output,merged=update_model_base_year(
+        og_data=OG_Input_Data,
+        input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Model_Base_Year.xlsx"),
+        output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_AR_Model_Base_Year.xlsx")
+    )
+    # except KeyError as e:
+    #     print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+    # except Exception as e:
+    #     print(f"Failed to update model base year file: {e}")
 
     try:
         update_projections(
@@ -1627,8 +1904,17 @@ def main():
         print(f"[Error] Failed to update YAML structure: {e}")
 
 
-
+    try:
+        update_xtra_storage(
+            og_data=OG_Input_Data,
+            input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Storage.xlsx"),
+            output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Storage.xlsx")
+        )
+    except Exception as e:
+        print(f"[Error] Failed to update storage file: {e}")
+    
+    return df_input,df_output,merged
 
 
 if __name__ == "__main__":
-    main()
+    df_input,df_output,merged=main()
