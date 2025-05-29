@@ -120,6 +120,13 @@ external_cost: 'External Cost'
 tech: 'Tech'
 emi_acti_ratio: 'EmissionActivityRatio'
 emi_penal: 'EmissionPenalty'
+# Extra Storage
+# File
+Xtra_Storage: '/A-Xtra_Storage.xlsx'
+# Sheets
+xs_1: 'Fixed Horizon Parameters'
+xs_2: 'CapitalCostStorage'
+xs_3: 'TechnologyStorage'
 # Print Demand Completed
 # File
 Print_Dem_Completed: '/A-O_Demand_COMPLETED.xlsx'
@@ -221,19 +228,19 @@ xtra_scen: {
   Other_Scenarios: [],
   Region: 'GLOBAL',
   Mode_of_Operation: [1, 2],
-  Season: ['1'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  Season: ['1', '2'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   DayType: ['1'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   DailyTimeBracket: ['1', '2'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   Timeslice: 'Some',
-  Timeslices: ['S1D1', 'S1D2'],
-  Storage: []
+  Timeslices: ['S1D2', 'S1D1', 'S2D2', 'S2D1'],
+  Storage: ['SDSCRIXX01', 'SDSPANXX01', 'LDSCRIXX01', 'LDSPANXX01']
   }
 
 # Remember the values of the "Conversionls", "Conversionld" and "Conversionlh"
 # are binary
-Conversionls: [1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
-Conversionld: [1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
-Conversionlh: [1, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
+Conversionls: [1, 0, 1, 0, 0, 1, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
+Conversionld: [1, 1, 1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
+Conversionlh: [0, 1, 1, 0, 0, 1, 1, 0] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
 #---------------------------------------------------------------#
 # Exceptions in sheets Primary, Secondary and Demand Techs
 # This exceptions don't have tech, have fuel
