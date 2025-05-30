@@ -12,11 +12,13 @@ outputs: 'Outputs'
 otoole_config: 'conversion_format.yaml'
 preprocess_data: 'preprocess_data.py'
 osemosys_model: 'osemosys_fast_preprocessed.txt'
-
 conv_format: 'conversion_format.yaml'
 concat_csvs: 'create_csv_concatenate.py'
+inputs_file: 'Inputs.csv'
+outputs_file: 'Outputs.csv'
 
 # Prefixes and suffixes
+prefix_final_files: 'REALC_TX_'
 preprocess_data_name: 'Pre_processed_'
 output_files: '_output'
 

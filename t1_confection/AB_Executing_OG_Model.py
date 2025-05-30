@@ -13,6 +13,7 @@ import sys
 import platform  
 import shutil
 import time
+from datetime import date
 
 ########################################################################################
 def sort_csv_files_in_folder(folder_path):
@@ -174,7 +175,7 @@ def run_preprocessing_script(params, scenario_name):
     # Step 2: Construct command
     command = [sys.executable, script_path, input_file, output_file]
 
-    print(f"Running preprocessing script for scenario '{scenario_name}':")
+    print(f"Running preprocessing script for scenario '{scenario_name}_0':")
     print(' '.join(command))
 
     # Step 3: Run the script
@@ -387,8 +388,82 @@ def generate_combined_input_file(input_folder, output_folder, scenario_name):
 
     return output_path, inputs_data.head()
 
+def concatenate_all_scenarios(params):
+    """
+    Iterates over all scenario folders in `base_input_path` (excluding 'Default'),
+    reads *_Input.csv and *_Output.csv files, adds scenario metadata columns, and
+    concatenates them into a single CSV file for inputs and another for outputs.
+
+    Args:
+        base_input_path (str): Path to the base directory containing scenario folders.
+        params (dict): Dictionary containing file and folder parameters.
+
+    Returns:
+        tuple: Paths to the saved input and output combined CSV files.
+    """
+    keys_sets_delete = ['REGION', 'YEAR', 'TECHNOLOGY', 'FUEL', 'EMISSION', 'MODE_OF_OPERATION',
+                        'TIMESLICES', 'STORAGE', 'SEASON', 'DAYTYPE', 'DAILYTIMEBRACKET']
+
+    combined_inputs = []
+    combined_outputs = []
+    
+    base_input_path = params['executables']
+
+    for scenario_future_name in os.listdir(base_input_path):
+        if scenario_future_name.lower() in ['default', '__pycache__', 'local_dataset_creator_0.py']:
+            continue
 
 
+        scenario_path = os.path.join(params['executables'], scenario_future_name)
+        scenario = scenario_future_name.split("_")[0]
+        future = scenario_future_name.split("_")[1]
+
+        input_file_path = os.path.join(scenario_path, f"{scenario_future_name}_Input.csv")
+        output_file_path = os.path.join(scenario_path, f"{scenario_future_name}_Output.csv")
+
+        if os.path.exists(input_file_path):
+            df_input = pd.read_csv(input_file_path, low_memory=False)
+            df_input.insert(0, "Future", future)
+            df_input.insert(1, "Scenario", scenario)
+            combined_inputs.append(df_input)
+
+        if os.path.exists(output_file_path):
+            df_output = pd.read_csv(output_file_path, low_memory=False)
+            df_output.insert(0, "Future", future)
+            df_output.insert(1, "Scenario", scenario)
+            combined_outputs.append(df_output)
+
+    # Combine all inputs
+    df_inputs_all = pd.concat(combined_inputs, ignore_index=True) if combined_inputs else pd.DataFrame()
+    df_outputs_all = pd.concat(combined_outputs, ignore_index=True) if combined_outputs else pd.DataFrame()
+
+    # Sort columns: metadata first, then alphabetical
+    def reorder_columns(df):
+        front_cols = ['Future', 'Scenario'] + [col for col in keys_sets_delete if col in df.columns]
+        other_cols = sorted([col for col in df.columns if col not in front_cols])
+        return df[front_cols + other_cols]
+    
+    today = date.today()
+    
+    if not df_inputs_all.empty:
+        df_inputs_all = reorder_columns(df_inputs_all)
+        input_output_path = params['prefix_final_files'] + params['inputs_file']
+        df_inputs_all.to_csv(input_output_path, index=False)
+        input_output_path = input_output_path.replace('.csv', '_' + str(today) + '.csv')
+        df_inputs_all.to_csv(input_output_path, index=False)
+    else:
+        input_output_path = None
+
+    if not df_outputs_all.empty:
+        df_outputs_all = reorder_columns(df_outputs_all)
+        output_output_path = params['prefix_final_files'] + params['outputs_file']
+        df_outputs_all.to_csv(output_output_path, index=False)
+        output_output_path = output_output_path.replace('.csv', '_' + str(today) + '.csv')
+        df_outputs_all.to_csv(output_output_path, index=False)
+    else:
+        output_output_path = None
+
+    return input_output_path, output_output_path
 
 ########################################################################################
 if __name__ == "__main__":
@@ -460,11 +535,18 @@ if __name__ == "__main__":
     end_1 = time.time()   
     time_elapsed_1 = -start1 + end_1
     print( str( time_elapsed_1 ) + ' seconds /', str( time_elapsed_1/60 ) + ' minutes' )
+
+    start2 = time.time()
     
+    # Concatenate inputs and outputs
+    input_output_path, output_output_path = concatenate_all_scenarios(params)
+    print(f'✅ Concatenate inputs and outputs for all scenarios successfully.')
+    print(f'The name files are: ({input_output_path}) and ({output_output_path})')
+    print('\n#------------------------------------------------------------------------------#')
     
-    
-    
-    
+    end_2 = time.time()   
+    time_elapsed_2 = -start2 + end_2
+    print( str( time_elapsed_2 ) + ' seconds /', str( time_elapsed_2/60 ) + ' minutes' )
     print('*: For all effects, we have finished the work of this script.')
 
             
