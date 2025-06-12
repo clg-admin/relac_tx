@@ -26,13 +26,13 @@ output_files: '_output'
 
 # Configuration parameters
 ########################################################################################
-solver: 'cbc' # Could you use: 'glpk', 'cbc' and 'cplex'
+solver: 'cplex' # Could you use: 'glpk', 'cbc' and 'cplex'
 
 # For CBC use
-iteration_time: 60
+iteration_time: 3600
 
 # For CPLEX use
-cplex_threads: 2
+cplex_threads: 8
 
 # For delete intermediate files
 del_files: True

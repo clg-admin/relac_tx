@@ -1371,34 +1371,59 @@ if operationallifestorage_data:  # Ensure there's something to append
 
 #
 df_CapitalCostStorage = pd.DataFrame( columns = Wide_Param_Header )
+df_ResidualStorageCapacity= pd.DataFrame( columns = Wide_Param_Header )
 
 capitalcoststorage_data = []
+residualstoragecapacity_data = []
 
 this_df = xtra_storage_capitalcost
 df_index_list = this_df.index.tolist()
 #
 for n in range( len( df_index_list ) ):
     this_storage = deepcopy(this_df.loc[n, 'STORAGE'])
+    this_parameter = deepcopy(this_df.loc[n, 'Parameter'])
+    this_projection_mode = deepcopy(this_df.loc[n, 'Projection.Mode'])
     # Loop through the time range vector
     for y in range(len(time_range_vector)):
         this_value_storage = deepcopy(this_df.loc[n, time_range_vector[y]])
+        if this_projection_mode == 'EMPTY':
+            continue
         # Create a dictionary for the current iteration
-        new_row = {
-            'PARAMETER': 'CapitalCostStorage',
-            'Scenario': other_setup_params['Main_Scenario'],
-            'REGION': other_setup_params['Region'],
-            'STORAGE': this_storage,
-            'YEAR': time_range_vector[y],
-            'Value': this_value_storage
-        }
-        # Add the dictionary to the list
-        capitalcoststorage_data.append(new_row)
+        if this_parameter == 'CapitalCostStorage':
+            new_row = {
+                'PARAMETER': this_parameter,
+                'Scenario': other_setup_params['Main_Scenario'],
+                'REGION': other_setup_params['Region'],
+                'STORAGE': this_storage,
+                'YEAR': time_range_vector[y],
+                'Value': this_value_storage
+            }
+            # Add the dictionary to the list
+            capitalcoststorage_data.append(new_row)
+
+        elif this_parameter == 'ResidualStorageCapacity':
+            new_row = {
+                'PARAMETER': this_parameter,
+                'Scenario': other_setup_params['Main_Scenario'],
+                'REGION': other_setup_params['Region'],
+                'STORAGE': this_storage,
+                'YEAR': time_range_vector[y],
+                'Value': this_value_storage
+            }
+            # Add the dictionary to the list
+            residualstoragecapacity_data.append(new_row)
 
 if capitalcoststorage_data:  # Ensure there's something to append
     new_capitalcoststorage_df = pd.DataFrame(capitalcoststorage_data)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=FutureWarning)
         df_CapitalCostStorage = pd.concat([df_CapitalCostStorage, new_capitalcoststorage_df], ignore_index=True)
+        
+if residualstoragecapacity_data:  # Ensure there's something to append
+    new_residualstoragecapacity_df = pd.DataFrame(residualstoragecapacity_data)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=FutureWarning)
+        df_ResidualStorageCapacity = pd.concat([df_ResidualStorageCapacity, new_residualstoragecapacity_df], ignore_index=True)
 
 #
 df_TechnologyToStorage = pd.DataFrame( columns = Wide_Param_Header )
@@ -1461,6 +1486,7 @@ if technologyfromstorage_data:  # Ensure there's something to append
 overall_param_df_dict['StorageLevelStart'] = df_StorageLevelStart
 overall_param_df_dict['OperationalLifeStorage'] = df_OperationalLifeStorage  
 overall_param_df_dict['CapitalCostStorage'] = df_CapitalCostStorage
+overall_param_df_dict['ResidualStorageCapacity'] = df_ResidualStorageCapacity
 overall_param_df_dict['TechnologyToStorage'] = df_TechnologyToStorage  
 overall_param_df_dict['TechnologyFromStorage'] = df_TechnologyFromStorage  
 # %%
