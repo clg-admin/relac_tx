@@ -11,6 +11,7 @@ iso_country_map = {
     "ARG": "Argentina", 
     "BRA": "Brazil", 
     "COL": "Colombia",
+    "BOL": "Bolivia",
     "PER": "Peru",
     "CHL": "Chile",
     "MEX": "Mexico",
@@ -26,7 +27,8 @@ iso_country_map = {
     "HND": "Honduras",
     "NIC": "Nicaragua",
     "SLV": "El Salvador",
-    "JAM": "Jamaica",
+    "JAM": "Barbados",
+    "HTI": "Haiti",
     'INT': 'International Markets'
 }
 
@@ -290,7 +292,7 @@ def process_projections(path, pairs):
 # 3. Process A-O_Parametrization.xlsx
 # ---------------------------------------------------------------------------
 PARAM_LIST = [
-    'CapitalCost','FixedCost','ResidualCapacity','TotalAnnualMaxCapacityInvestment'
+    'CapitalCost','FixedCost','ResidualCapacity','TotalAnnualMinCapacityInvestment', 'TotalAnnualMaxCapacity'
 ]
 
 def process_parametrization(path, pairs, yaml_data):
