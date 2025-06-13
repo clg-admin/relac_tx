@@ -232,15 +232,15 @@ xtra_scen: {
   DayType: ['1'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   DailyTimeBracket: ['1', '2'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   Timeslice: 'Some',
-  Timeslices: ['S1D2', 'S1D1', 'S2D2', 'S2D1'],
-  Storage: ['SDSCRIXX01', 'SDSPANXX01', 'LDSCRIXX01', 'LDSPANXX01']
+  Timeslices: ['S1D1', 'S1D2', 'S2D1', 'S2D2'],
+  Storage: ['LDSCRIXX01', 'LDSPANXX01', 'SDSCRIXX01', 'SDSPANXX01']
   }
 
 # Remember the values of the "Conversionls", "Conversionld" and "Conversionlh"
 # are binary
 Conversionls: [1, 0, 1, 0, 0, 1, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
 Conversionld: [1, 1, 1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
-Conversionlh: [0, 1, 1, 0, 0, 1, 1, 0] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
+Conversionlh: [1, 0, 0, 1, 1, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
 #---------------------------------------------------------------#
 # Exceptions in sheets Primary, Secondary and Demand Techs
 # This exceptions don't have tech, have fuel

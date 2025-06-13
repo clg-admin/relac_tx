@@ -13,7 +13,7 @@ otoole_config: 'conversion_format.yaml'
 preprocess_data: 'preprocess_data.py'
 osemosys_model: 'osemosys_fast_preprocessed.txt'
 conv_format: 'conversion_format.yaml'
-concat_csvs: 'create_csv_concatenate.py'
+concat_csvs: 'concatenate_relac.py'
 inputs_file: 'Inputs.csv'
 outputs_file: 'Outputs.csv'
 
@@ -26,13 +26,47 @@ output_files: '_output'
 
 # Configuration parameters
 ########################################################################################
-solver: 'cbc' # Could you use: 'glpk', 'cbc' and 'cplex'
+solver: 'cplex' # Could you use: 'glpk', 'cbc' and 'cplex'
 
 # For CBC use
 iteration_time: 60
 
 # For CPLEX use
-cplex_threads: 2
+cplex_threads: 8
 
 # For delete intermediate files
-del_files: True
+del_files: False
+
+
+
+
+
+
+
+
+
+
+
+
+
+# tier1_dir: '\t1_confection\Executables' # Don't change
+# vis_dir: 'Visualizations'
+
+# sets_otoole: [ # B1, em, FRM
+#   YEAR,
+#   TECHNOLOGY,
+#   TIMESLICE,
+#   FUEL,
+#   EMISSION,
+#   MODE_OF_OPERATION,
+#   REGION,
+#   SEASON,
+#   DAYTYPE,
+#   DAILYTIMEBRACKET,
+#   STORAGE
+#   ]
+  
+# model: 'MOMF'
+
+# execute_scenarios: ['All']
+# scens: ['BAU']

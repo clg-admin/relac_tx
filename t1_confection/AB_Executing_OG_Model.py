@@ -305,7 +305,7 @@ def main_executer(params, scenario_name):
     if solver in ['glpk', 'cbc', 'cplex']:
         file_conca_csvs = get_config_main_path(os.path.abspath(''), 'config_plots')
         script_concate_csv = os.path.join(file_conca_csvs, params['concat_csvs'])
-        str_otoole_concate_csv = f'python -u {script_concate_csv} {this_case} 1'  # last int is the ID tier
+        str_otoole_concate_csv = f'python -u {script_concate_csv} {file_path_outputs} {output_file}'  # last int is the ID tier
         subprocess.run(str_otoole_concate_csv, shell=True, check=True)
         print(f'✅ Concatenated outputs to {scenario_name}_0_Output.csv successfully.')
         print('\n#------------------------------------------------------------------------------#')
@@ -419,7 +419,7 @@ def concatenate_all_scenarios(params):
         future = scenario_future_name.split("_")[1]
 
         input_file_path = os.path.join(scenario_path, f"{scenario_future_name}_Input.csv")
-        output_file_path = os.path.join(scenario_path, f"{scenario_future_name}_Output.csv")
+        output_file_path = os.path.join(scenario_path, f"Pre_processed_{scenario_future_name}_Output.csv")
 
         if os.path.exists(input_file_path):
             df_input = pd.read_csv(input_file_path, low_memory=False)
