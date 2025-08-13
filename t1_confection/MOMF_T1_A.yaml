@@ -7,7 +7,7 @@ A1_inputs: './A1_Inputs'
 A1_outputs: './A1_Outputs'
 A2_extra_inputs: './A2_Extra_Inputs'
 A2_output: './A2_Output_Params/'
-A2_output_BAU: './A2_Output_Params/BAU/'
+A2_output_main_scen: './A2_Output_Params/'
 A2_output_NDP: './A2_Output_Params/NDC/'
 
 # Files, sheets and columns
@@ -161,8 +161,8 @@ Pickle_Fleet_Groups_T2D: '/A-O_Fleet_Groups_T2D.pickle'
 # Years variables
 #----------------------------------------------------------------------------------#
 # Base year
-base_year: '2021'
-initial_year: '2021'
+base_year: '2023'
+initial_year: '2023'
 
 # Final year
 final_year: '2050'
@@ -228,19 +228,19 @@ xtra_scen: {
   Other_Scenarios: [],
   Region: 'GLOBAL',
   Mode_of_Operation: [1, 2],
-  Season: ['1', '2'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  Season: ['1', '2', '3', '4'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   DayType: ['1'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
-  DailyTimeBracket: ['1', '2'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
+  DailyTimeBracket: ['1', '2', '3'], # Put in "B1_Model_Structure.xlsx" on the sheet "set"
   Timeslice: 'Some',
-  Timeslices: ['S1D1', 'S1D2', 'S2D1', 'S2D2'],
-  Storage: ['LDSCRIXX01', 'LDSPANXX01', 'SDSCRIXX01', 'SDSPANXX01']
+  Timeslices: ['S1D1', 'S1D2', 'S1D3', 'S2D1', 'S2D2', 'S2D3', 'S3D1', 'S3D2', 'S3D3', 'S4D1', 'S4D2', 'S4D3'],
+  Storage: ['LDSARGXX01', 'LDSBOLXX01', 'LDSBRAXX01', 'LDSCHLXX01', 'LDSCOLXX01', 'LDSCRIXX01', 'LDSDOMXX01', 'LDSECUXX01', 'LDSGTMXX01', 'LDSHNDXX01', 'LDSHTIXX01', 'LDSJAMXX01', 'LDSMEXXX01', 'LDSNICXX01', 'LDSPANXX01', 'LDSPERXX01', 'LDSPRYXX01', 'LDSSLVXX01', 'LDSURYXX01', 'SDSARGXX01', 'SDSBOLXX01', 'SDSBRAXX01', 'SDSCHLXX01', 'SDSCOLXX01', 'SDSCRIXX01', 'SDSDOMXX01', 'SDSECUXX01', 'SDSGTMXX01', 'SDSHNDXX01', 'SDSHTIXX01', 'SDSJAMXX01', 'SDSMEXXX01', 'SDSNICXX01', 'SDSPANXX01', 'SDSPERXX01', 'SDSPRYXX01', 'SDSSLVXX01', 'SDSURYXX01']
   }
 
 # Remember the values of the "Conversionls", "Conversionld" and "Conversionlh"
 # are binary
-Conversionls: [1, 0, 1, 0, 0, 1, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
-Conversionld: [1, 1, 1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
-Conversionlh: [1, 0, 0, 1, 1, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
+Conversionls: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
+Conversionld: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
+Conversionlh: [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
 #---------------------------------------------------------------#
 # Exceptions in sheets Primary, Secondary and Demand Techs
 # This exceptions don't have tech, have fuel
