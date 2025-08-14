@@ -158,6 +158,7 @@ def main():
     # Define key paths
     yaml_file = script_dir / "MOMF_T1_A.yaml"
     compiler_script = script_dir / "A2_Compiler.py"
+    A1_Outputs_script = script_dir / "A1_Outputs"
 
 
     if not yaml_file.is_file():
@@ -168,7 +169,7 @@ def main():
         sys.exit(1)
 
     # Build scenario list from folder names
-    scenario_suffixes = list_scenario_suffixes(script_dir)
+    scenario_suffixes = list_scenario_suffixes(A1_Outputs_script)
     if not scenario_suffixes:
         print("[WARN] No 'A1_Outputs_*' folders found. Nothing to do.")
         sys.exit(0)

@@ -41,8 +41,8 @@ print_aid_parameter = False
 #------------------------------------------------------------------------------
 print('1 - Connect the model activity ratios.')
 #
-AR_Model_Base_Year = pd.ExcelFile(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Base_Year'])
-AR_Projections = pd.ExcelFile(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Proj'])
+AR_Model_Base_Year = pd.ExcelFile(os.path.join(params['A1_outputs'], params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Base_Year']))
+AR_Projections = pd.ExcelFile(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Proj']))
 groups_list = AR_Model_Base_Year.sheet_names # see all sheet names
 # NOTE THIS IS THE SAME AS :: AR_Projections.sheet_names # see all sheet names
 
@@ -319,7 +319,7 @@ print('3 (end) - The model has ben connected.')
 # DEMAND
 print('4 - Process the model demand.')
 
-Demand = pd.ExcelFile(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Demand'])
+Demand = pd.ExcelFile(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Demand']))
 param_sheets = Demand.sheet_names # see all sheet names
 
 
@@ -510,9 +510,9 @@ print('5 - Parameterize technologies.')
 Battery_Replacement = pd.ExcelFile(params['A2_extra_inputs'] + params['Xtra_Battery'])
 Battery_Replacement_df = Battery_Replacement.parse( Battery_Replacement.sheet_names[0] ) # see all sheet names
 
-Fleet = pd.ExcelFile(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Fleet'])
+Fleet = pd.ExcelFile(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Fleet']))
 Fleet_df = Fleet.parse( Fleet.sheet_names[0] )
-Fleet_Groups = pickle.load( open( params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups'], "rb" ) )
+Fleet_Groups = pickle.load( open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups']), "rb" ) )
 Fleet_Groups_Distance = {}
 Fleet_Groups_OR = {} # *OR* is occupancy rate
 
@@ -520,7 +520,7 @@ Fleet_Groups_OR = {} # *OR* is occupancy rate
 
 
 #
-Parametrization = pd.ExcelFile(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Paramet'])
+Parametrization = pd.ExcelFile(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Paramet']))
 param_sheets = Parametrization.sheet_names # see all sheet names]
 if 'growth_formula' in param_sheets:
     param_sheets.remove('growth_formula')
@@ -1558,14 +1558,14 @@ print('*: For all effects, we have finished the processing tasks of this script.
 #***********************************************************************************
 #---------------------------------
 # Print updated demand DF (user)
-writer_Demand_df_new = pd.ExcelWriter(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Dem_Completed'], engine='xlsxwriter')
+writer_Demand_df_new = pd.ExcelWriter(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Dem_Completed']), engine='xlsxwriter')
 Demand_df_new[params['initial_year']] = Demand_df_new[params['initial_year']].astype(float)
 Demand_df_new = Demand_df_new.round( 4 )
 Demand_df_new.to_excel( writer_Demand_df_new, sheet_name = params['A_O_Dem'], index=False)
 writer_Demand_df_new.close()
 #---------------------------------
 # Print updated *parameterization* DF (user) // this is in Osemosys terms
-writer_Param_df = pd.ExcelWriter(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Paramet_Completed'], engine='xlsxwriter')
+writer_Param_df = pd.ExcelWriter(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Paramet_Completed']), engine='xlsxwriter')
 param_sheets_print = list( params_dict_new.keys() )
 for s in range( len( param_sheets_print ) ):
     this_df_print = params_dict_new[ param_sheets_print[s] ]
@@ -1574,7 +1574,7 @@ for s in range( len( param_sheets_print ) ):
 writer_Param_df.close()
 #---------------------------------
 # Print updated *parameterization* DF (user) // this is in "natural" terms, i.e. the value of each one of the vehicles per unit
-writer_Param_Natural_df = pd.ExcelWriter(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Paramet_Natural_Completed'], engine='xlsxwriter')
+writer_Param_Natural_df = pd.ExcelWriter(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Paramet_Natural_Completed']), engine='xlsxwriter')
 param_sheets_print = list( params_dict_new_natural.keys() )
 for s in range( len( param_sheets_print ) ):
     this_df_print = params_dict_new_natural[ param_sheets_print[s] ]
@@ -1583,7 +1583,7 @@ for s in range( len( param_sheets_print ) ):
 writer_Param_Natural_df.close()
 #---------------------------------
 # Print updated 'Activity Ratio' projections
-writer_AR_Proj_df = pd.ExcelWriter(params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Proj_Completed'], engine='xlsxwriter')
+writer_AR_Proj_df = pd.ExcelWriter(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Proj_Completed']), engine='xlsxwriter')
 param_sheets_print = list( AR_Base_proj_df_new.keys() )
 for s in range( len( param_sheets_print ) ):
     this_df_print = AR_Base_proj_df_new[ param_sheets_print[s] ]
@@ -1713,10 +1713,10 @@ print( str( time_elapsed_1 ) + ' seconds /', str( time_elapsed_2/60 ) + ' minute
 print('*: We just finished the printing of the results.')
 # %%
 # Print important pickles below:
-with open( params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_Dist'], 'wb') as handle1:
+with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_Dist']), 'wb') as handle1:
     pickle.dump(Fleet_Groups_Distance, handle1, protocol=pickle.HIGHEST_PROTOCOL)
-with open( params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_OR'], 'wb') as handle2:
+with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_OR']), 'wb') as handle2:
     pickle.dump(Fleet_Groups_OR, handle2, protocol=pickle.HIGHEST_PROTOCOL)
-with open( params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_T2D'], 'wb') as handle3:
+with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_T2D']), 'wb') as handle3:
     pickle.dump(Fuels_techs_2_dems, handle3, protocol=pickle.HIGHEST_PROTOCOL)
 #
