@@ -61,7 +61,7 @@ Dem_Code: 'Dem_to_Code'
 # Columns
 # Fuel, Code, Plain English and Plain Spanish: are strutural feature 1
 vehfuel: 'VehFuel'
-techs: 'Techs'
+# techs: 'Techs'
 dem_codes: 'Demand_Codes'
 techs_slash_dem: 'Techs/Demand'
 vehfuel_slash_tech: 'VehFuel/Tech'
@@ -98,7 +98,7 @@ log_file_A1: '/Log.txt'
 Xtra_Proj: '/A-Xtra_Projections.xlsx'
 # Columns
 variable: 'Variable'
-proj_mode: 'Projection Mode'
+# proj_mode: 'Projection Mode'
 dem_slash_share: 'Demand/Share'
 fuel_slash_tech: 'Fuel/Tech'
 proj_mode: 'Projection.Mode'
@@ -169,17 +169,12 @@ final_year: '2050'
 
 #----------------------------------------------------------------------------------#
 # Sectors use
-Use_Transport: False
-Use_OG_module: True
+Use_Transport: false
+Use_OG_module: true
 
 #----------------------------------------------------------------------------------#
-test_tertiary_fuels: [
-    'Electricity',
-    'Hydrogen',
-    'Gases',
-    'Natural_Gas',
-    'Diesel_Blend',
-    'Gasoline_Blend' 
+test_tertiary_fuels: ['Electricity', 'Hydrogen', 'Gases', 'Natural_Gas', 'Diesel_Blend',
+  'Gasoline_Blend'
     # 'Moist_Broadleaf',
     # 'Coniferous',
     # 'Mangrove',
@@ -198,27 +193,19 @@ test_tertiary_fuels: [
     # 'Sewer_water',
     # 'Direct_discharged_water',
     # 'Total_waste_water'
-    ]
+]
 
 # Type of transport
 #---------------------------#
-dict_dist_fam_to_name_eng: {
-  PUB: Public,
-  PRI: Private,
-  HEA: Heavy Freight ,
-  LIG: Light Freight,
-  NONMOT: Non motorized
+dict_dist_fam_to_name_eng: {PUB: Public, PRI: Private, HEA: Heavy Freight, LIG: 
+    Light Freight, NONMOT: Non motorized
   #TUR: Tourism
-  }
+}
 
-dict_dist_fam_to_name_spa: {
-  PUB: Público,
-  PRI: Privado,
-  HEA: Carga Pesada,
-  LIG: Carga Liviana,
-  NONMOT: No motorizada
+dict_dist_fam_to_name_spa: {PUB: Público, PRI: Privado, HEA: Carga Pesada, LIG: 
+    Carga Liviana, NONMOT: No motorizada
   #TUR: Turismo
-  }
+}
 #---------------------------#
 
 # General Variables
@@ -238,9 +225,11 @@ xtra_scen: {
 
 # Remember the values of the "Conversionls", "Conversionld" and "Conversionlh"
 # are binary
-Conversionls: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(Season)
+Conversionls: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 
+    0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]                                                                              # Quantity of the values is the multiply of len(Timeslices) x len(Season)
 Conversionld: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DayType)
-Conversionlh: [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1] # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
+Conversionlh: [1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 
+    1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1]                                                                              # Quantity of the values is the multiply of len(Timeslices) x len(DailyTimeBracket)
 #---------------------------------------------------------------#
 # Exceptions in sheets Primary, Secondary and Demand Techs
 # This exceptions don't have tech, have fuel
@@ -248,182 +237,110 @@ sheets_exceptions_to_fuel: ['ReserveMarginTagFuel']
 #---------------------------------------------------------------#
 # Technologies parameters
 #---------------------------------------------------------------#
-codes_primary_secondary_demands_df_headers: [
-  'Primary.Tech', 'Primary.Fuel.O',
-  'Secondary.Fuel.I', 'Secondary.Tech', 'Secondary.Fuel.O',
-  'Demands.Fuel.I', 'Demands.Tech', 'Demands.Fuel.O'
-  ]
+codes_primary_secondary_demands_df_headers: ['Primary.Tech', 'Primary.Fuel.O', 'Secondary.Fuel.I',
+  'Secondary.Tech', 'Secondary.Fuel.O', 'Demands.Fuel.I', 'Demands.Tech', 'Demands.Fuel.O']
 
-codes_transport_df_headers: [ 
-  'DISTTRN.Fuel.I', 'DISTTRN.Tech', 'DISTTRN.Fuel.O',
-  'TRN.Fuel.I', 'TRN.Tech', 'TRN.Fuel.O',
-  'TRNGROUP.Fuel.I', 'TRNGROUP.Tech', 'TRNGROUP.Fuel.O'
-  ]
+codes_transport_df_headers: ['DISTTRN.Fuel.I', 'DISTTRN.Tech', 'DISTTRN.Fuel.O', 'TRN.Fuel.I',
+  'TRN.Tech', 'TRN.Fuel.O', 'TRNGROUP.Fuel.I', 'TRNGROUP.Tech', 'TRNGROUP.Fuel.O']
 
-tech_param_list_all_notyearly: [
-  'CapacityToActivityUnit', 'OperationalLife'
-  ]
+tech_param_list_all_notyearly: ['CapacityToActivityUnit', 'OperationalLife']
 
-tech_param_list_primary: [     
-  'CapitalCost', 'FixedCost', 
-  'ResidualCapacity', 'TotalAnnualMaxCapacity',
-  'TotalTechnologyAnnualActivityUpperLimit',
-  'TotalTechnologyAnnualActivityLowerLimit',
-  'TotalAnnualMinCapacityInvestment',
-  'AvailabilityFactor'
-  ]
-tech_param_list_secondary: [
-  'CapitalCost', 'FixedCost',
-  'ResidualCapacity', 'TotalAnnualMaxCapacity',
-  'TotalTechnologyAnnualActivityUpperLimit',
-  'TotalTechnologyAnnualActivityLowerLimit',
-  'TotalAnnualMinCapacityInvestment',
-  'AvailabilityFactor'
-  ]
+tech_param_list_primary: ['CapitalCost', 'FixedCost', 'ResidualCapacity', 'TotalAnnualMaxCapacity',
+  'TotalTechnologyAnnualActivityUpperLimit', 'TotalTechnologyAnnualActivityLowerLimit',
+  'TotalAnnualMinCapacityInvestment', 'AvailabilityFactor']
+tech_param_list_secondary: ['CapitalCost', 'FixedCost', 'ResidualCapacity', 'TotalAnnualMaxCapacity',
+  'TotalTechnologyAnnualActivityUpperLimit', 'TotalTechnologyAnnualActivityLowerLimit',
+  'TotalAnnualMinCapacityInvestment', 'AvailabilityFactor']
 
-tech_param_list_demands: [
-  'CapitalCost', 'FixedCost', 'ResidualCapacity'
-  ]
+tech_param_list_demands: ['CapitalCost', 'FixedCost', 'ResidualCapacity']
 
-tech_param_list_disttrn: [
-  'CapitalCost', 'FixedCost', 'ResidualCapacity'
-  ]
+tech_param_list_disttrn: ['CapitalCost', 'FixedCost', 'ResidualCapacity']
 
-tech_param_list_trn: [
-  'CapitalCost', 'FixedCost', 'ResidualCapacity', 
-  'TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit'
-  ]
+tech_param_list_trn: ['CapitalCost', 'FixedCost', 'ResidualCapacity', 'TotalAnnualMaxCapacity',
+  'TotalTechnologyAnnualActivityLowerLimit']
 
-tech_param_list_trngroups: [
-  'TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit'                            
-  ]
+tech_param_list_trngroups: ['TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit']
 
-tech_param_list_all_notyearly_df_headers: [
-  'Tech.Type','Tech.ID', 'Tech', 'Tech.Name',
-  'Parameter.ID', 'Parameter', 'Unit', 'Value'
-  ]
+tech_param_list_all_notyearly_df_headers: ['Tech.Type', 'Tech.ID', 'Tech', 'Tech.Name',
+  'Parameter.ID', 'Parameter', 'Unit', 'Value']
 
-tech_param_list_all_yearly_df_headers: [
-  'Tech.ID', 'Tech', 'Tech.Name', 'Parameter.ID',
-  'Parameter', 'Unit', 'Projection.Mode',
-  'Projection.Parameter'
-  ]
+tech_param_list_all_yearly_df_headers: ['Tech.ID', 'Tech', 'Tech.Name', 'Parameter.ID',
+  'Parameter', 'Unit', 'Projection.Mode', 'Projection.Parameter']
 #---------------------------------------------------------------#
 
 # Demand data
 #---------------------------------------------------------------#
-df_demands_all_header: [
-  'Demand/Share', 'Fuel/Tech', 'Name', 'Ref.Cap.BY',
-  'Ref.OAR.BY', 'Ref.km.BY', 'Projection.Mode',
-  'Projection.Parameter'
-  ]
+df_demands_all_header: ['Demand/Share', 'Fuel/Tech', 'Name', 'Ref.Cap.BY', 'Ref.OAR.BY',
+  'Ref.km.BY', 'Projection.Mode', 'Projection.Parameter']
 
 # A: primary technologies
-df_techs_primary_base_year_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
-  'Value.Fuel.O', 'Unit.Fuel.O'
-  ]
+df_techs_primary_base_year_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel.O',
+  'Fuel.O.Name', 'Value.Fuel.O', 'Unit.Fuel.O']
 
-df_techs_primary_projection_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
-  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+df_techs_primary_projection_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel',
+  'Fuel.Name', 'Direction', 'Projection.Mode', 'Projection.Parameter']
 
 # B: secondary technologies
-df_techs_secondary_base_year_HEADER: [
-  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
-  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
-  'Value.Fuel.O', 'Unit.Fuel.O'
-  ]
+df_techs_secondary_base_year_HEADER: ['Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I',
+  'Unit.Fuel.I', 'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O', 'Unit.Fuel.O']
 
-df_techs_secondary_projection_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name', 'Direction',
-  'Projection.Mode', 'Projection.Parameter'
-  ]
+df_techs_secondary_projection_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel',
+  'Fuel.Name', 'Direction', 'Projection.Mode', 'Projection.Parameter']
 
 # C: Simple methods
-df_techs_demand_base_year_HEADER: [
-  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
-  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
-  'Value.Fuel.O', 'Unit.Fuel.O'
-  ]
+df_techs_demand_base_year_HEADER: ['Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I',
+  'Unit.Fuel.I', 'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O', 'Unit.Fuel.O']
 
-df_techs_demand_projection_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
-  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+df_techs_demand_projection_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel',
+  'Fuel.Name', 'Direction', 'Projection.Mode', 'Projection.Parameter']
 
 # D: Fuel distribution elements of transport
-df_techs_DISTTRN_base_year_HEADER: [
-  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
-  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
-  'Value.Fuel.O', 'Unit.Fuel.O'
-  ]
+df_techs_DISTTRN_base_year_HEADER: ['Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I',
+  'Unit.Fuel.I', 'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O', 'Unit.Fuel.O']
 
-df_techs_DISTTRN_projection_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
-  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+df_techs_DISTTRN_projection_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel',
+  'Fuel.Name', 'Direction', 'Projection.Mode', 'Projection.Parameter']
 
 # E: Vehicle technologies
-df_techs_TRN_base_year_HEADER: [
-  'Mode.Operation', 'Fuel.I.1', 'Fuel.I.1.Name', 'Value.Fuel.I.1', 'Unit.Fuel.I.1',
-  'Fuel.I.2', 'Fuel.I.2.Name', 'Value.Fuel.I.2', 'Unit.Fuel.I.2',
-  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O',
-  'Unit.Fuel.O'
-  ]
+df_techs_TRN_base_year_HEADER: ['Mode.Operation', 'Fuel.I.1', 'Fuel.I.1.Name', 'Value.Fuel.I.1',
+  'Unit.Fuel.I.1', 'Fuel.I.2', 'Fuel.I.2.Name', 'Value.Fuel.I.2', 'Unit.Fuel.I.2',
+  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O', 'Unit.Fuel.O']
 
-df_techs_TRN_projection_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
-  'Direction', 'Projection.Mode', 'Projection.Parameter' ]
+df_techs_TRN_projection_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
+  'Direction', 'Projection.Mode', 'Projection.Parameter']
 
 # F: Group vehicle technologies
-df_techs_TRNGROUP_base_year_HEADER: [
-  'Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I', 'Unit.Fuel.I',
-  'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name',
-  'Value.Fuel.O', 'Unit.Fuel.O'
-  ]
+df_techs_TRNGROUP_base_year_HEADER: ['Mode.Operation', 'Fuel.I', 'Fuel.I.Name', 'Value.Fuel.I',
+  'Unit.Fuel.I', 'Tech', 'Tech.Name', 'Fuel.O', 'Fuel.O.Name', 'Value.Fuel.O', 'Unit.Fuel.O']
 
-df_techs_TRNGROUP_projection_HEADER: [
-  'Mode.Operation', 'Tech', 'Tech.Name', 'Fuel', 'Fuel.Name',
-  'Direction', 'Projection.Mode', 'Projection.Parameter'
-  ]
+df_techs_TRNGROUP_projection_HEADER: ['Mode.Operation', 'Tech', 'Tech.Name', 'Fuel',
+  'Fuel.Name', 'Direction', 'Projection.Mode', 'Projection.Parameter']
 
-tech_param_list_dfs_names: [
-  'Fixed Horizon Parameters', 'Primary Techs', 'Secondary Techs', 
-  'Capacities', 'Yearsplit', 'DaySplit', 'VariableCost', 'Demand Techs', 
-  'Transport Fuel Distribution', 'Vehicle Techs', 'Vehicle Groups'
-  ]
+tech_param_list_dfs_names: ['Fixed Horizon Parameters', 'Primary Techs', 'Secondary
+    Techs', 'Capacities', 'Yearsplit', 'DaySplit', 'VariableCost', 'Demand Techs',
+  'Transport Fuel Distribution', 'Vehicle Techs', 'Vehicle Groups']
 #---------------------------------------------------------------#
 
 # Prints
 #---------------------------------------------------------------#
-df_base_year_names: [
-  'Primary', 'Secondary', 'Demand Techs', 'Distribution Transport',
-  'Transport', 'Transport Groups'
-  ]
+df_base_year_names: ['Primary', 'Secondary', 'Demand Techs', 'Distribution Transport',
+  'Transport', 'Transport Groups']
 
-df_projection_names: [
-  'Primary', 'Secondary', 'Demand Techs', 'Distribution Transport',
-  'Transport', 'Transport Groups'
-  ]
+df_projection_names: ['Primary', 'Secondary', 'Demand Techs', 'Distribution Transport',
+  'Transport', 'Transport Groups']
 #---------------------------------------------------------------#
 
-df_techs_fleet_HEADER: [
-  'Group.ID', 'Group/Vehicle', 'Techs', 'Description',
-  'Fleet Unit', 'Base Year', 'Base Year Value'
-  ]
+df_techs_fleet_HEADER: ['Group.ID', 'Group/Vehicle', 'Techs', 'Description', 'Fleet
+    Unit', 'Base Year', 'Base Year Value']
 
 # A2
-sets: [
-  'PARAMETER', 'Scenario', 'REGION', 'TECHNOLOGY', 'FUEL', # For the production of the parameter files
-  'EMISSION', 'MODE_OF_OPERATION', 'YEAR', 'TIMESLICE',
-  'SEASON', 'DAYTYPE', 'DAILYTIMEBRACKET', 'STORAGE', 'Value'
-  ]
+sets: ['PARAMETER', 'Scenario', 'REGION', 'TECHNOLOGY', 'FUEL', 'EMISSION', 'MODE_OF_OPERATION',
+  'YEAR', 'TIMESLICE', 'SEASON', 'DAYTYPE', 'DAILYTIMEBRACKET', 'STORAGE', 'Value']
 
-AR_Osemosys_Parameters: [ 'InputActivityRatio', 'OutputActivityRatio']
+AR_Osemosys_Parameters: ['InputActivityRatio', 'OutputActivityRatio']
 
-demand_headers: [
-  'Demand/Share', 'Fuel/Tech', 'Ref.Cap.BY', 'Ref.OAR.BY', 'Ref.km.BY',
-  'Projection.Mode', 'Projection.Parameter', 'Introduced.Unit', 'Target.Unit'
-  ]
+demand_headers: ['Demand/Share', 'Fuel/Tech', 'Ref.Cap.BY', 'Ref.OAR.BY', 'Ref.km.BY',
+  'Projection.Mode', 'Projection.Parameter', 'Introduced.Unit', 'Target.Unit']
 
 cap_params: ['TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit']
 cap_params_Rail: ['TotalAnnualMaxCapacity', 'TotalTechnologyAnnualActivityLowerLimit']
@@ -464,7 +381,6 @@ empty: 'EMPTY'
 other_techs: 'Other_Techs'
 accor_dem: 'According to demand'
 ref_km_by: 'Ref.km.BY'
-columns4: ['YEAR','TECHNOLOGY','TIMESLICE','FUEL','EMISSION',
-            'MODE_OF_OPERATION','REGION', 'DAYTYPE', 'DAILYTIMEBRACKET',
-            'SEASON', 'STORAGE']
+columns4: ['YEAR', 'TECHNOLOGY', 'TIMESLICE', 'FUEL', 'EMISSION', 'MODE_OF_OPERATION',
+  'REGION', 'DAYTYPE', 'DAILYTIMEBRACKET', 'SEASON', 'STORAGE']
 ##############################################################################

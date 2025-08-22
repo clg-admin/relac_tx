@@ -1,4 +1,4 @@
-# Model external dependencies: Directories, Files, sheets and columns
+    # Model external dependencies: Directories, Files, sheets and columns
 ########################################################################################
 # Directories
 A2_output: 'A2_Output_Params'
@@ -7,6 +7,7 @@ Miscellaneous: 'Miscellaneous'
 templates: 'templates'
 executables: 'Executables'
 outputs: 'Outputs'
+concatenate_folder: 'concatenate_files'
 
 # Files
 otoole_config: 'conversion_format.yaml'
@@ -35,7 +36,7 @@ iteration_time: 7000
 cplex_threads: 12
 
 # For delete intermediate files
-del_files: True
+del_files: False
 
 # For run only the main scenarios
 only_main_scenario: True
