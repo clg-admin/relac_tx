@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-@author: Luis Victor-Gallardo // 2021
+Created on 2021
+@author: Luis Victor-Gallardo
+
+Updated on 2025
+@author: ClimateLeadGroup, Andrey Salazar-Vargas
 """
 import pandas as pd
 import pickle
@@ -510,11 +514,12 @@ print('5 - Parameterize technologies.')
 Battery_Replacement = pd.ExcelFile(params['A2_extra_inputs'] + params['Xtra_Battery'])
 Battery_Replacement_df = Battery_Replacement.parse( Battery_Replacement.sheet_names[0] ) # see all sheet names
 
-Fleet = pd.ExcelFile(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Fleet']))
-Fleet_df = Fleet.parse( Fleet.sheet_names[0] )
-Fleet_Groups = pickle.load( open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups']), "rb" ) )
-Fleet_Groups_Distance = {}
-Fleet_Groups_OR = {} # *OR* is occupancy rate
+if params['Use_Transport']:
+    Fleet = pd.ExcelFile(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Fleet']))
+    Fleet_df = Fleet.parse( Fleet.sheet_names[0] )
+    Fleet_Groups = pickle.load( open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups']), "rb" ) )
+    Fleet_Groups_Distance = {}
+    Fleet_Groups_OR = {} # *OR* is occupancy rate
 
 
 
@@ -1556,6 +1561,7 @@ time_elapsed_1 = -start1 + end_1
 print( str( time_elapsed_1 ) + ' seconds /', str( time_elapsed_1/60 ) + ' minutes' )
 print('*: For all effects, we have finished the processing tasks of this script. We must now print the results out.')
 #***********************************************************************************
+'''
 #---------------------------------
 # Print updated demand DF (user)
 writer_Demand_df_new = pd.ExcelWriter(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Dem_Completed']), engine='xlsxwriter')
@@ -1592,6 +1598,7 @@ for s in range( len( param_sheets_print ) ):
 writer_AR_Proj_df.close()
 #
 #***********************************************************************************
+'''
 #
 #***********************************************************************************
 #
@@ -1711,12 +1718,12 @@ end_2 = time.time()
 time_elapsed_2 = -start1 + end_2
 print( str( time_elapsed_1 ) + ' seconds /', str( time_elapsed_2/60 ) + ' minutes' )
 print('*: We just finished the printing of the results.')
-# %%
-# Print important pickles below:
-with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_Dist']), 'wb') as handle1:
-    pickle.dump(Fleet_Groups_Distance, handle1, protocol=pickle.HIGHEST_PROTOCOL)
-with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_OR']), 'wb') as handle2:
-    pickle.dump(Fleet_Groups_OR, handle2, protocol=pickle.HIGHEST_PROTOCOL)
-with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_T2D']), 'wb') as handle3:
-    pickle.dump(Fuels_techs_2_dems, handle3, protocol=pickle.HIGHEST_PROTOCOL)
-#
+# # %%
+# # Print important pickles below:
+# with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_Dist']), 'wb') as handle1:
+#     pickle.dump(Fleet_Groups_Distance, handle1, protocol=pickle.HIGHEST_PROTOCOL)
+# with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_OR']), 'wb') as handle2:
+#     pickle.dump(Fleet_Groups_OR, handle2, protocol=pickle.HIGHEST_PROTOCOL)
+# with open( os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Pickle_Fleet_Groups_T2D']), 'wb') as handle3:
+#     pickle.dump(Fuels_techs_2_dems, handle3, protocol=pickle.HIGHEST_PROTOCOL)
+# #
