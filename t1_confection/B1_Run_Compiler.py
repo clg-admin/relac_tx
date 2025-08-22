@@ -11,7 +11,7 @@ Run scenarios by:
 2) Building a list with the suffix after 'A1_Outputs_'.
 3) Iterating the list:
    - Update xtra_scen.Main_Scenario in 'MOMF_T1_A.yaml' to the current scenario.
-   - Execute 'A2_Compiler.py'.
+   - Execute 'B1_Compiler.py'.
 Notes:
 - All referenced files are assumed to be in the same folder as this script.
 - The YAML file is backed up before modifications and restored at the end.
@@ -142,8 +142,8 @@ def update_main_scenario(yaml_path: Path, new_value: str) -> None:
 
 
 def run_compiler(script_dir: Path) -> int:
-    """Execute A2_Compiler.py with the current Python interpreter."""
-    compiler = script_dir / "A2_Compiler.py"
+    """Execute B1_Compiler.py with the current Python interpreter."""
+    compiler = script_dir / "B1_Compiler.py"
     if not compiler.is_file():
         raise FileNotFoundError(f"Missing script: {compiler}")
     # Run using same Python interpreter
@@ -157,7 +157,7 @@ def main():
 
     # Define key paths
     yaml_file = script_dir / "MOMF_T1_A.yaml"
-    compiler_script = script_dir / "A2_Compiler.py"
+    compiler_script = script_dir / "B1_Compiler.py"
     A1_Outputs_script = script_dir / "A1_Outputs"
 
 
@@ -197,9 +197,9 @@ def main():
             # 2) Execute compiler
             rc = run_compiler(script_dir)
             if rc != 0:
-                print(f"[ERROR] A2_Compiler.py exited with code {rc} for scenario '{scenario}'")
+                print(f"[ERROR] B1_Compiler.py exited with code {rc} for scenario '{scenario}'")
             else:
-                print(f"[INFO] A2_Compiler.py completed successfully for scenario '{scenario}'")
+                print(f"[INFO] B1_Compiler.py completed successfully for scenario '{scenario}'")
 
     finally:
         # Restore original YAML from backup
