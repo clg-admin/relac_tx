@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Created on 2025
+
+@author: ClimateLeadGroup, Javier Monge-Matamoros
+"""
 
 import argparse
 import sys
