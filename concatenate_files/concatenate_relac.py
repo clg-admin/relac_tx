@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wen May 07 09:36:25 2024
+Created on 2025
 
-@author: ClimateLeadGroup, Andre Salazar-Vargas
+@author: ClimateLeadGroup, Andrey Salazar-Vargas
 """
 
 import os
@@ -18,20 +18,10 @@ if __name__ == '__main__':
     main_path = sys.argv
     outputs_folder = main_path[1]
     output_file = main_path[2]
+    
+    # outputs_folder = 'C:\\Users\\ClimateLeadGroup\\Desktop\\CLG_repositories\\relac_tx\\t1_confection\\Executables\\BAU_0\\Outputs'
+    # output_file = 'C:\\Users\\ClimateLeadGroup\\Desktop\\CLG_repositories\\relac_tx\\t1_confection\\Executables\\BAU_0\\Pre_processed_BAU_0_output'
 
-    # sets_otoole = [
-    #     # "YEAR",
-    #     # "TECHNOLOGY",
-    #     # "TIMESLICE",
-    #     # "FUEL",
-    #     # "EMISSION",
-    #     # "MODE_OF_OPERATION",
-    #     # "REGION",
-    #     # "SEASON",
-    #     # "DAYTYPE",
-    #     # "DAILYTIMEBRACKET",
-    #     # "STORAGE"
-    # ]
 
     sets_csv = [
         "YEAR",
@@ -55,7 +45,6 @@ if __name__ == '__main__':
     sets_csv_temp = deepcopy(sets_csv)
     sets_csv_temp.insert(0,'Parameter')
     sets_csv_temp.append('VALUE')
-    # set_no_needed = [item for item in sets_otoole if item not in sets_csv]
     
 
     count = 0
@@ -77,7 +66,6 @@ if __name__ == '__main__':
             
             local_df = pd.read_csv(tier_dir + '/' + f)
             
-            # print(local_df.columns)
             # Delete columns of sets do not use in otoole config yaml
             columns_check = [column for column in local_df.columns if column in sets_corrects]
             local_df = local_df[columns_check]
