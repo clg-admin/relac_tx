@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on 2025
+
+@author: ClimateLeadGroup, Andrey Salazar-Vargas
+"""
+
 import os
 import re
 import pandas as pd
