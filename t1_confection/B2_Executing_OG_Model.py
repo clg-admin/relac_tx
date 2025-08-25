@@ -502,33 +502,32 @@ def concatenate_all_scenarios(HERE, params):
         
         
         #########################################################################################
-        df = df_combined.copy()  # para evitar vistas
-        df['AccumulatedTotalAnnualMinCapacityInvestment'] = df['TotalAnnualMinCapacityInvestment']
-        
-        # 2) Determina el rango de años dinámicamente
-        years = sorted(df['YEAR'].dropna().unique())
-        period_start = years[0]   # p.ej. 2021
-        period_end   = years[-1]  # p.ej. 2050
-        
-        # 3) Inicializa el acumulador
-        acc = 0
-        
-        # 4) Recorre fila a fila SIN agrupar ni filtrar
-        for idx in df.index:
-            year = df.at[idx, 'YEAR']
-            val  = df.at[idx, 'AccumulatedTotalAnnualMinCapacityInvestment']
+        if "TotalAnnualMinCapacityInvestment" in df_combined.columns:
+            df = df_combined.copy()  # para evitar vistas
+            df['AccumulatedTotalAnnualMinCapacityInvestment'] = df['TotalAnnualMinCapacityInvestment']
             
-            # Cuando llegue al año inicial, reinicias el acumulador
-            if year == period_start:
-                acc = val
-                df.at[idx, 'AccumulatedTotalAnnualMinCapacityInvestment'] = val
-            else:
-                # En años posteriores, sumas el valor actual al acumulado
-                acc = acc + val
-                df.at[idx, 'AccumulatedTotalAnnualMinCapacityInvestment'] = acc
-        df_combined = df
-
-
+            # 2) Determina el rango de años dinámicamente
+            years = sorted(df['YEAR'].dropna().unique())
+            period_start = years[0]   # p.ej. 2021
+            period_end   = years[-1]  # p.ej. 2050
+            
+            # 3) Inicializa el acumulador
+            acc = 0
+            
+            # 4) Recorre fila a fila SIN agrupar ni filtrar
+            for idx in df.index:
+                year = df.at[idx, 'YEAR']
+                val  = df.at[idx, 'AccumulatedTotalAnnualMinCapacityInvestment']
+                
+                # Cuando llegue al año inicial, reinicias el acumulador
+                if year == period_start:
+                    acc = val
+                    df.at[idx, 'AccumulatedTotalAnnualMinCapacityInvestment'] = val
+                else:
+                    # En años posteriores, sumas el valor actual al acumulado
+                    acc = acc + val
+                    df.at[idx, 'AccumulatedTotalAnnualMinCapacityInvestment'] = acc
+            df_combined = df
         #########################################################################################
         
         
