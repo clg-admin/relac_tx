@@ -1919,7 +1919,7 @@ def main():
     OUTPUT_FOLDER = script_dir / "A1_Outputs"
     scenario_suffixes = list_scenario_suffixes(OUTPUT_FOLDER)
     for scen in scenario_suffixes:
-
+        print('\nScenario process: ',scen)
         # File A-O_Demand.xlsx
         try:
             update_demand(
@@ -1995,7 +1995,7 @@ def main():
         except Exception as e:
             print(f"[Error] Failed to update storage file: {e}")
         
-        return df_input,df_output,merged
+    return df_input,df_output,merged
 
 
 if __name__ == "__main__":
