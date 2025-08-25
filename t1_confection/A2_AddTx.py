@@ -10,6 +10,8 @@ import sys
 import os
 import yaml
 import pandas as pd
+from typing import List
+from pathlib import Path
 
 RENEWABLE_FUELS = {"BIO", "HYD", "CSP", "GEO", "SPV", "WAS", "WAV", "WON", "WOF"}
 iso_country_map = {
@@ -418,38 +420,54 @@ def process_parametrization(path, pairs, yaml_data):
 
     print("✔ Parametrization file updated.")
 
+def list_scenario_suffixes(base_dir: Path) -> List[str]:
+    """Return list like ['BAU_NoRPO','NDC','NDC+ELC'] from folders 'A1_Outputs_*'."""
+    suffixes: List[str] = []
+    for item in sorted(base_dir.iterdir()):
+        if item.is_dir() and item.name.startswith("A1_Outputs_"):
+            suffix = item.name.split("A1_Outputs_", 1)[1]
+            if suffix:  # Ensure non-empty
+                suffixes.append(suffix)
+    return suffixes
 
 # ---------------------------------------------------------------------------
 # CLI glue
 # ---------------------------------------------------------------------------
 def main():
-    defaults = {
-        "yaml": "country_codes.yaml",
-        "base": "A1_Outputs/A-O_AR_Model_Base_Year.xlsx",
-        "proj": "A1_Outputs/A-O_AR_Projections.xlsx",
-        "param": "A1_Outputs/A-O_Parametrization.xlsx"
-    }
-    ap = argparse.ArgumentParser(description='Process CLG model spreadsheets.')
-    ap.add_argument('--yaml', help='country_codes.yaml')
-    ap.add_argument('--base', help='A-O_AR_Model_Base_Year.xlsx')
-    ap.add_argument('--proj', help='A-O_AR_Projections.xlsx')
-    ap.add_argument('--param', help='A-O_Parametrization.xlsx')
-    ap.set_defaults(**defaults)
-    args = ap.parse_args()
-   
-    pairs = load_country_region_pairs(args.yaml)
-    if not pairs:
-        sys.exit('No valid country/region codes found in YAML.')
-
-    # Optional detailed YAML per-tech/parameter values
-    with open(args.yaml,'r',encoding='utf-8') as fh:
-        yaml_data = yaml.safe_load(fh)
-        if not isinstance(yaml_data, dict):
-            yaml_data = {}
-
-    process_base_year(args.base, pairs)
-    process_projections(args.proj, pairs)
-    process_parametrization(args.param, pairs, yaml_data)
+    
+    script_dir = Path.cwd()
+    OUTPUT_FOLDER = script_dir / "A1_Outputs"
+    scenario_suffixes = list_scenario_suffixes(OUTPUT_FOLDER)
+    for scen in scenario_suffixes:
+    
+    
+        defaults = {
+            "yaml": "country_codes.yaml",
+            "base": f"A1_Outputs/A1_Outputs_{scen}/A-O_AR_Model_Base_Year.xlsx",
+            "proj": f"A1_Outputs/A1_Outputs_{scen}/A-O_AR_Projections.xlsx",
+            "param": f"A1_Outputs/A1_Outputs_{scen}/A-O_Parametrization.xlsx"
+        }
+        ap = argparse.ArgumentParser(description='Process CLG model spreadsheets.')
+        ap.add_argument('--yaml', help='country_codes.yaml')
+        ap.add_argument('--base', help='A-O_AR_Model_Base_Year.xlsx')
+        ap.add_argument('--proj', help='A-O_AR_Projections.xlsx')
+        ap.add_argument('--param', help='A-O_Parametrization.xlsx')
+        ap.set_defaults(**defaults)
+        args = ap.parse_args()
+       
+        pairs = load_country_region_pairs(args.yaml)
+        if not pairs:
+            sys.exit('No valid country/region codes found in YAML.')
+    
+        # Optional detailed YAML per-tech/parameter values
+        with open(args.yaml,'r',encoding='utf-8') as fh:
+            yaml_data = yaml.safe_load(fh)
+            if not isinstance(yaml_data, dict):
+                yaml_data = {}
+    
+        process_base_year(args.base, pairs)
+        process_projections(args.proj, pairs)
+        process_parametrization(args.param, pairs, yaml_data)
 
     print("\n  All done!")
 

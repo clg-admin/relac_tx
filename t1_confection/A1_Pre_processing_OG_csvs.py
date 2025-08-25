@@ -12,12 +12,27 @@ import numpy as np
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import warnings
+from typing import List
+from pathlib import Path
+
+def list_scenario_suffixes(base_dir: Path) -> List[str]:
+    """Return list like ['BAU_NoRPO','NDC','NDC+ELC'] from folders 'A1_Outputs_*'."""
+    suffixes: List[str] = []
+    for item in sorted(base_dir.iterdir()):
+        if item.is_dir() and item.name.startswith("A1_Outputs_"):
+            suffix = item.name.split("A1_Outputs_", 1)[1]
+            if suffix:  # Ensure non-empty
+                suffixes.append(suffix)
+    return suffixes
+
 
 # Define folder paths
 INPUT_FOLDER = "OG_csvs_inputs"
-OUTPUT_FOLDER = "A1_Outputs"
-INPUT_EXCEL_PATH = os.path.join("Miscellaneous", "A-O_Demand.xlsx")
-OUTPUT_EXCEL_PATH = os.path.join(OUTPUT_FOLDER, "A-O_Demand.xlsx")
+script_dir = Path.cwd()
+# OUTPUT_FOLDER = script_dir / "A1_Outputs"
+# scenario_suffixes = list_scenario_suffixes(OUTPUT_FOLDER)
+# INPUT_EXCEL_PATH = os.path.join("Miscellaneous", "A-O_Demand.xlsx")
+# OUTPUT_EXCEL_PATH = os.path.join(OUTPUT_FOLDER, "A-O_Demand.xlsx")
 
 # ISO-3 country code to country name mapping for Latin America and the Caribbean
 iso_country_map = {
@@ -1900,83 +1915,87 @@ def main():
     sort_csv_files_in_folder(INPUT_FOLDER)
     global OG_Input_Data
     OG_Input_Data = read_csv_files(INPUT_FOLDER)
-
-    # File A-O_Demand.xlsx
-    try:
-        update_demand(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_Demand.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_Demand.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"[Error] Failed to update demand file: {e}")
-
-    # File A-O_Parametrization.xlsx
-    try:
-        update_parametrization(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_Parametrization.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_Parametrization.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"[Error] Failed to update parametrization file: {e}")
     
-    # File A-Xtra_Emissions.xlsx
-    try:
-        update_xtra_emissions(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Emissions.xlsx"),
-            output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Emissions.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"Failed to update extra emissions file: {e}")
+    OUTPUT_FOLDER = script_dir / "A1_Outputs"
+    scenario_suffixes = list_scenario_suffixes(OUTPUT_FOLDER)
+    for scen in scenario_suffixes:
 
-    # File A-O_AR_Model_Base_Year.xlsx
-    # try:
-    df_input,df_output,merged=update_model_base_year(
-        og_data=OG_Input_Data,
-        input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Model_Base_Year.xlsx"),
-        output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_AR_Model_Base_Year.xlsx")
-    )
-    # except KeyError as e:
-    #     print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    # except Exception as e:
-    #     print(f"Failed to update model base year file: {e}")
-
-    try:
-        update_projections(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Projections.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_AR_Projections.xlsx")
-        )
-    except Exception as e:
-        print(f"[Error] Failed to update projections file: {e}")
+        # File A-O_Demand.xlsx
+        try:
+            update_demand(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-O_Demand.xlsx"),
+                output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_Demand.xlsx")
+            )
+        except KeyError as e:
+            print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        except Exception as e:
+            print(f"[Error] Failed to update demand file: {e}")
+    
+        # File A-O_Parametrization.xlsx
+        try:
+            update_parametrization(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-O_Parametrization.xlsx"),
+                output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_Parametrization.xlsx")
+            )
+        except KeyError as e:
+            print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        except Exception as e:
+            print(f"[Error] Failed to update parametrization file: {e}")
         
-    try:
-        update_yaml_structure(
-            og_data=OG_Input_Data,
-            yaml_path="MOMF_T1_A.yaml"
-        )
-    except Exception as e:
-        print(f"[Error] Failed to update YAML structure: {e}")
-
-
-    try:
-        update_xtra_storage(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Storage.xlsx"),
-            output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Storage.xlsx")
-        )
-    except Exception as e:
-        print(f"[Error] Failed to update storage file: {e}")
+        # File A-Xtra_Emissions.xlsx
+        try:
+            update_xtra_emissions(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Emissions.xlsx"),
+                output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Emissions.xlsx")
+            )
+        except KeyError as e:
+            print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        except Exception as e:
+            print(f"Failed to update extra emissions file: {e}")
     
-    return df_input,df_output,merged
+        # File A-O_AR_Model_Base_Year.xlsx
+        # try:
+        df_input,df_output,merged=update_model_base_year(
+            og_data=OG_Input_Data,
+            input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Model_Base_Year.xlsx"),
+            output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_AR_Model_Base_Year.xlsx")
+        )
+        # except KeyError as e:
+        #     print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        # except Exception as e:
+        #     print(f"Failed to update model base year file: {e}")
+    
+        try:
+            update_projections(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Projections.xlsx"),
+                output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_AR_Projections.xlsx")
+            )
+        except Exception as e:
+            print(f"[Error] Failed to update projections file: {e}")
+            
+        try:
+            update_yaml_structure(
+                og_data=OG_Input_Data,
+                yaml_path="MOMF_T1_A.yaml"
+            )
+        except Exception as e:
+            print(f"[Error] Failed to update YAML structure: {e}")
+    
+    
+        try:
+            update_xtra_storage(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Storage.xlsx"),
+                output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Storage.xlsx")
+            )
+        except Exception as e:
+            print(f"[Error] Failed to update storage file: {e}")
+        
+        return df_input,df_output,merged
 
 
 if __name__ == "__main__":
