@@ -27,19 +27,19 @@ output_files: '_output'
 
 # Configuration parameters
 ########################################################################################
-solver: 'cplex' # Could you use: 'glpk', 'cbc' and 'cplex'
+solver: 'cbc' # Could you use: 'glpk', 'cbc' and 'cplex'
 
 # For CBC use
-iteration_time: 7000
+iteration_time: 20000
 
 # For CPLEX use
 cplex_threads: 12
 
 # For delete intermediate files
-del_files: False
+del_files: True
 
 # For run only the main scenarios
-only_main_scenario: True
+only_main_scenario: False
 
 # Paralle scenarios
 parallel: False
