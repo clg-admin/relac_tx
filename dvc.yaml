@@ -1,21 +1,21 @@
 stages:
-  preprocess:                # name of the stage
-    # wdir: t1_confection
-    cmd: python -u t1_confection/B1_Run_Compiler.py
-    deps:
-      # files
-      - t1_confection/B1_Compiler.py
-      - t1_confection/MOMF_T1_A.yaml
+  # preprocess:                # name of the stage
+  #   # wdir: t1_confection
+  #   cmd: python -u t1_confection/B1_Run_Compiler.py
+  #   deps:
+  #     # files
+  #     - t1_confection/B1_Compiler.py
+  #     - t1_confection/MOMF_T1_A.yaml
 
-      # folder with data
-      - t1_confection/A1_Outputs/
-      - t1_confection/A2_Extra_Inputs/
-    outs:
-      # files
-      - t1_confection/A2_Structure_Lists.xlsx
+  #     # folder with data
+  #     - t1_confection/A1_Outputs/
+  #     - t1_confection/A2_Extra_Inputs/
+  #   outs:
+  #     # files
+  #     - t1_confection/A2_Structure_Lists.xlsx
 
-      # folder with data 
-      - t1_confection/A2_Output_Params/
+  #     # folder with data 
+  #     - t1_confection/A2_Output_Params/
 
   executing:                     # name of the stage
     # wdir: t1_confection
@@ -31,8 +31,11 @@ stages:
       - t1_confection/Miscellaneous/
 
     outs:
-      # folder with data (with cache)
-      - t1_confection/Executables/
+      # folder with data (without cache)
+      - t1_confection/A2_Outputs_Params_otoole/:
+          cache: false
+      - t1_confection/Executables/:
+          cache: false
 
       # files (without cache)
       - t1_confection/RELAC_TX_Inputs.csv:
@@ -48,6 +51,6 @@ stages:
       - t1_confection/RELAC_TX_Combined_Inputs_Outputs_fecha.csv:
           cache: false
 
-      # folder with data (without cache)
-      - t1_confection/A2_Outputs_Params_otoole/:
-          cache: false
+      # # folder with data (without cache)
+      # - t1_confection/A2_Outputs_Params_otoole/:
+      #     cache: false
