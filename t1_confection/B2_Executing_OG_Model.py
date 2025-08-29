@@ -365,6 +365,8 @@ def generate_combined_input_file(input_folder, output_folder, scenario_name):
                         'TIMESLICE', 'STORAGE', 'SEASON', 'DAYTYPE', 'DAILYTIMEBRACKET']
 
     inputs_dataframes = []
+    print(input_folder)
+    print(os.listdir(input_folder))
     for filename in os.listdir(input_folder):
         if not filename.endswith(".csv"):
             continue
@@ -582,7 +584,18 @@ if __name__ == "__main__":
     
     # Carpeta donde vive este script: .../relac_tx/t1_confection
     global HERE
-    HERE = Path(__file__).resolve().parent
+    def get_here() -> Path:
+        # 1) Script normal
+        if '__file__' in globals():
+            return Path(__file__).resolve().parent
+        # 2) Algunos IDEs exponen __main__.__file__
+        main = sys.modules.get('__main__')
+        if hasattr(main, '__file__'):
+            return Path(main.__file__).resolve().parent
+        # 3) Consola/ejecución interactiva: carpeta de trabajo actual
+        return Path.cwd().resolve()
+    
+    HERE = get_here()
     
     
     # (Opcional) Cambiar CWD a la carpeta del script
@@ -617,14 +630,14 @@ if __name__ == "__main__":
     # Write txt model
     for scenario_name in scenarios:
          
-        if params['write_txt_model']:
+        if params['A2_otoole_outputs']:
             process_scenario_folder(
                 base_input_path=base_input_path,
                 template_path=template_path,
                 base_output_path=base_output_path,
                 scenario_name=scenario_name
             )
-            
+        if params['write_txt_model']:
             run_otoole_conversion(
                 base_output_path=base_output_path,
                 scenario_name=scenario_name,

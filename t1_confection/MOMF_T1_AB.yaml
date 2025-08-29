@@ -27,7 +27,7 @@ output_files: '_output'
 
 # Configuration parameters
 ########################################################################################
-solver: 'cbc' # Could you use: 'glpk', 'cbc' and 'cplex'
+solver: 'cplex' # Could you use: 'glpk', 'cbc' and 'cplex'
 
 # For CBC use
 iteration_time: 20000
@@ -45,6 +45,9 @@ only_main_scenario: False
 parallel: False
 # Number of scenario per run
 max_x_per_iter: 2
+
+# Write A2 otoole outputs
+A2_otoole_outputs: True
 
 # Write txt model
 write_txt_model: True
