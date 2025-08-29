@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Feb 22 10:52:32 2024
+Created on 2024
 
-@author: andreysava19
+@author: ClimateLeadGroup, Andrey Salazar-Vargas
 """
 
 import yaml

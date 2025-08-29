@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on 2025
+
+@author: ClimateLeadGroup, Andrey Salazar-Vargas
+"""
+
 import os
 import re
 import pandas as pd
@@ -5,12 +12,27 @@ import numpy as np
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 import warnings
+from typing import List
+from pathlib import Path
+
+def list_scenario_suffixes(base_dir: Path) -> List[str]:
+    """Return list like ['BAU_NoRPO','NDC','NDC+ELC'] from folders 'A1_Outputs_*'."""
+    suffixes: List[str] = []
+    for item in sorted(base_dir.iterdir()):
+        if item.is_dir() and item.name.startswith("A1_Outputs_"):
+            suffix = item.name.split("A1_Outputs_", 1)[1]
+            if suffix:  # Ensure non-empty
+                suffixes.append(suffix)
+    return suffixes
+
 
 # Define folder paths
 INPUT_FOLDER = "OG_csvs_inputs"
-OUTPUT_FOLDER = "A1_Outputs"
-INPUT_EXCEL_PATH = os.path.join("Miscellaneous", "A-O_Demand.xlsx")
-OUTPUT_EXCEL_PATH = os.path.join(OUTPUT_FOLDER, "A-O_Demand.xlsx")
+script_dir = Path.cwd()
+# OUTPUT_FOLDER = script_dir / "A1_Outputs"
+# scenario_suffixes = list_scenario_suffixes(OUTPUT_FOLDER)
+# INPUT_EXCEL_PATH = os.path.join("Miscellaneous", "A-O_Demand.xlsx")
+# OUTPUT_EXCEL_PATH = os.path.join(OUTPUT_FOLDER, "A-O_Demand.xlsx")
 
 # ISO-3 country code to country name mapping for Latin America and the Caribbean
 iso_country_map = {
@@ -18,6 +40,7 @@ iso_country_map = {
     "ARG": "Argentina", 
     "BRA": "Brazil", 
     "COL": "Colombia",
+    "BOL": "Bolivia",
     "PER": "Peru",
     "CHL": "Chile",
     "MEX": "Mexico",
@@ -33,7 +56,8 @@ iso_country_map = {
     "HND": "Honduras",
     "NIC": "Nicaragua",
     "SLV": "El Salvador",
-    "JAM": "Jamaica",
+    "JAM": "Barbados",
+    "HTI": "Haiti",
     'INT': 'International Markets'
 }
 
@@ -1423,55 +1447,86 @@ def update_xtra_storage_fixed_horizon_parameters(og_data, workbook):
 
     print("[Success] Sheet 'Fixed Horizon Parameters' in Extra Storage updated.")
 
+
 def update_xtra_storage_capital_cost_storage(og_data, workbook):
     """
     Updates the 'CapitalCostStorage' sheet in the A-Xtra_Storage Excel workbook
-    using the 'CapitalCostStorage' parameter. The sheet is updated with projection
-    mode and values per year per storage technology.
+    using the 'CapitalCostStorage' and 'ResidualStorageCapacity' parameters.
+    Missing storage technologies in one parameter are filled with EMPTY mode in the other.
+    Rows are sorted by 'STORAGE.ID'.
     """
-    if "CapitalCostStorage" not in og_data:
-        print("[Warning] 'CapitalCostStorage' not found in OG_Input_Data.")
-        return workbook
+    param_list = [("CapitalCostStorage", 1), ("ResidualStorageCapacity", 2)]
+    all_storages = set()
+    param_data = {}
 
-    df = og_data["CapitalCostStorage"]
-    df_grouped = df.groupby("STORAGE")
+    for param_name, param_id in param_list:
+        if param_name not in og_data:
+            print(f"[Warning] '{param_name}' not found in OG_Input_Data.")
+            continue
+        df = og_data[param_name]
+        df_grouped = df.groupby("STORAGE")
+        all_storages.update(df["STORAGE"].unique())
 
-    records = []
-    all_years = sorted(df["YEAR"].unique())
-    storage_ids = {name: idx + 1 for idx, name in enumerate(sorted(df["STORAGE"].unique()))}
+        records = {}
+        for storage, group in df_grouped:
+            year_values = {int(row["YEAR"]): row["VALUE"] for _, row in group.iterrows()}
+            available_years = sorted(group["YEAR"].unique())
+            values = [year_values.get(y, np.nan) for y in available_years]
+            non_nan_count = sum(pd.notna(values))
 
-    for storage, group in df_grouped:
-        available_years = sorted(group["YEAR"].unique())
-        year_values = {int(row["YEAR"]): row["VALUE"] for _, row in group.iterrows()}
-        values = [year_values.get(y, np.nan) for y in available_years]
+            if non_nan_count == 0:
+                mode = "EMPTY"
+            elif non_nan_count == 1:
+                mode = "Flat"
+            elif non_nan_count == len(values):
+                mode = "User defined"
+            else:
+                mode = "interpolation"
 
-        non_nan_count = sum(pd.notna(values))
-        if non_nan_count == 0:
-            mode = "EMPTY"
-        elif non_nan_count == 1:
-            mode = "Flat"
-        elif non_nan_count == len(values):
-            mode = "User defined"
-        else:
-            mode = "interpolation"
+            records[storage] = {
+                "Projection.Mode": mode,
+                "Year.Values": year_values,
+                "Years": available_years
+            }
+        param_data[param_name] = records
 
-        record = {
-            "STORAGE.ID": storage_ids[storage],
-            "STORAGE": storage,
-            "STORAGE.Name": parse_tech_name(storage),
-            "Parameter.ID": 1,
-            "Parameter": "CapitalCostStorage",
-            "Unit": None,
-            "Projection.Mode": mode,
-            "Projection.Parameter": None
-        }
+    all_years = sorted(set(
+        y for pdata in param_data.values()
+        for pinfo in pdata.values()
+        for y in pinfo["Years"]
+    ))
 
-        for y in all_years:
-            record[int(y)] = year_values.get(y, np.nan)
+    storage_ids = {name: idx + 1 for idx, name in enumerate(sorted(all_storages))}
+    final_records = []
 
-        records.append(record)
+    for storage in sorted(all_storages):
+        for param_name, param_id in param_list:
+            pdata = param_data.get(param_name, {})
+            pinfo = pdata.get(storage)
 
-    df_out = pd.DataFrame(records)
+            record = {
+                "STORAGE.ID": storage_ids[storage],
+                "STORAGE": storage,
+                "STORAGE.Name": parse_tech_name(storage),
+                "Parameter.ID": param_id,
+                "Parameter": param_name,
+                "Unit": None,
+                "Projection.Parameter": None
+            }
+
+            if pinfo is None:
+                record["Projection.Mode"] = "EMPTY"
+                for y in all_years:
+                    record[int(y)] = np.nan
+            else:
+                record["Projection.Mode"] = pinfo["Projection.Mode"]
+                for y in all_years:
+                    record[int(y)] = pinfo["Year.Values"].get(y, np.nan)
+
+            final_records.append(record)
+
+    df_out = pd.DataFrame(final_records)
+    df_out = df_out.sort_values(by=["STORAGE.ID"])
     df_out = df_out[
         ["STORAGE.ID", "STORAGE", "STORAGE.Name", "Parameter.ID", "Parameter",
          "Unit", "Projection.Mode", "Projection.Parameter"] + all_years
@@ -1479,12 +1534,11 @@ def update_xtra_storage_capital_cost_storage(og_data, workbook):
 
     ws = workbook["CapitalCostStorage"]
     ws.delete_rows(1, ws.max_row)
-
     for r in dataframe_to_rows(df_out, index=False, header=True):
         ws.append(r)
 
     print("[Success] Sheet 'CapitalCostStorage' in Extra Storage updated.")
-    return workbook
+    return workbook, df_out.head()
 
 def update_xtra_storage_technology_storage(og_data, workbook):
     """
@@ -1829,90 +1883,118 @@ def update_yaml_structure(og_data, yaml_path):
     print("[Success] Yaml file 'MOMF_T1_A' updated.")
     print("-------------------------------------------------------------------------\n")
 
+def sort_csv_files_in_folder(folder_path):
+    if not os.path.isdir(folder_path):
+        print(f"The path is invalid: {folder_path}")
+        return
+    print('################################################################')
+    print('Sort csv files.')
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".csv"):
+            file_path = os.path.join(folder_path, filename)
+            print(f"Processing: {filename}")
+            try:
+                # Leer el CSV preservando la cabecera
+                df = pd.read_csv(file_path)
 
+                # Ordenar usando todas las columnas
+                df_sorted = df.sort_values(by=list(df.columns))
+
+                # Sobrescribir el archivo original
+                df_sorted.to_csv(file_path, index=False)
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+
+    print("✅ All files were sort.")
+    print('################################################################\n')
 
 #--------------------------------------------------------------------------------------------------#
 def main():
     """Main execution function."""
     os.makedirs(INPUT_FOLDER, exist_ok=True)
+    sort_csv_files_in_folder(INPUT_FOLDER)
     global OG_Input_Data
     OG_Input_Data = read_csv_files(INPUT_FOLDER)
-
-    # File A-O_Demand.xlsx
-    try:
-        update_demand(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_Demand.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_Demand.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"[Error] Failed to update demand file: {e}")
-
-    # File A-O_Parametrization.xlsx
-    try:
-        update_parametrization(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_Parametrization.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_Parametrization.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"[Error] Failed to update parametrization file: {e}")
     
-    # File A-Xtra_Emissions.xlsx
-    try:
-        update_xtra_emissions(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Emissions.xlsx"),
-            output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Emissions.xlsx")
-        )
-    except KeyError as e:
-        print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    except Exception as e:
-        print(f"Failed to update extra emissions file: {e}")
-
-    # File A-O_AR_Model_Base_Year.xlsx
-    # try:
-    df_input,df_output,merged=update_model_base_year(
-        og_data=OG_Input_Data,
-        input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Model_Base_Year.xlsx"),
-        output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_AR_Model_Base_Year.xlsx")
-    )
-    # except KeyError as e:
-    #     print(f"[KeyError] Missing key in OG_Input_Data: {e}")
-    # except Exception as e:
-    #     print(f"Failed to update model base year file: {e}")
-
-    try:
-        update_projections(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Projections.xlsx"),
-            output_excel_path=os.path.join(OUTPUT_FOLDER, "A-O_AR_Projections.xlsx")
-        )
-    except Exception as e:
-        print(f"[Error] Failed to update projections file: {e}")
+    OUTPUT_FOLDER = script_dir / "A1_Outputs"
+    scenario_suffixes = list_scenario_suffixes(OUTPUT_FOLDER)
+    for scen in scenario_suffixes:
+        print('\nScenario process: ',scen)
+        # File A-O_Demand.xlsx
+        try:
+            update_demand(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-O_Demand.xlsx"),
+                output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_Demand.xlsx")
+            )
+        except KeyError as e:
+            print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        except Exception as e:
+            print(f"[Error] Failed to update demand file: {e}")
+    
+        # File A-O_Parametrization.xlsx
+        try:
+            update_parametrization(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-O_Parametrization.xlsx"),
+                output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_Parametrization.xlsx")
+            )
+        except KeyError as e:
+            print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        except Exception as e:
+            print(f"[Error] Failed to update parametrization file: {e}")
         
-    try:
-        update_yaml_structure(
-            og_data=OG_Input_Data,
-            yaml_path="MOMF_T1_A.yaml"
-        )
-    except Exception as e:
-        print(f"[Error] Failed to update YAML structure: {e}")
-
-
-    try:
-        update_xtra_storage(
-            og_data=OG_Input_Data,
-            input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Storage.xlsx"),
-            output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Storage.xlsx")
-        )
-    except Exception as e:
-        print(f"[Error] Failed to update storage file: {e}")
+        # File A-Xtra_Emissions.xlsx
+        try:
+            update_xtra_emissions(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Emissions.xlsx"),
+                output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Emissions.xlsx")
+            )
+        except KeyError as e:
+            print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        except Exception as e:
+            print(f"Failed to update extra emissions file: {e}")
     
+        # File A-O_AR_Model_Base_Year.xlsx
+        # try:
+        df_input,df_output,merged=update_model_base_year(
+            og_data=OG_Input_Data,
+            input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Model_Base_Year.xlsx"),
+            output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_AR_Model_Base_Year.xlsx")
+        )
+        # except KeyError as e:
+        #     print(f"[KeyError] Missing key in OG_Input_Data: {e}")
+        # except Exception as e:
+        #     print(f"Failed to update model base year file: {e}")
+    
+        try:
+            update_projections(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-O_AR_Projections.xlsx"),
+                output_excel_path=os.path.join(str(OUTPUT_FOLDER), 'A1_Outputs_'+scen, "A-O_AR_Projections.xlsx")
+            )
+        except Exception as e:
+            print(f"[Error] Failed to update projections file: {e}")
+            
+        try:
+            update_yaml_structure(
+                og_data=OG_Input_Data,
+                yaml_path="MOMF_T1_A.yaml"
+            )
+        except Exception as e:
+            print(f"[Error] Failed to update YAML structure: {e}")
+    
+    
+        try:
+            update_xtra_storage(
+                og_data=OG_Input_Data,
+                input_excel_path=os.path.join("Miscellaneous", "A-Xtra_Storage.xlsx"),
+                output_excel_path=os.path.join("A2_Extra_Inputs", "A-Xtra_Storage.xlsx")
+            )
+        except Exception as e:
+            print(f"[Error] Failed to update storage file: {e}")
+        
     return df_input,df_output,merged
 
 

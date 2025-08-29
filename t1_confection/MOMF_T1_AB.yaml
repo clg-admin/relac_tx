@@ -1,4 +1,4 @@
-# Model external dependencies: Directories, Files, sheets and columns
+    # Model external dependencies: Directories, Files, sheets and columns
 ########################################################################################
 # Directories
 A2_output: 'A2_Output_Params'
@@ -7,18 +7,19 @@ Miscellaneous: 'Miscellaneous'
 templates: 'templates'
 executables: 'Executables'
 outputs: 'Outputs'
+concatenate_folder: 'concatenate_files'
 
 # Files
 otoole_config: 'conversion_format.yaml'
 preprocess_data: 'preprocess_data.py'
 osemosys_model: 'osemosys_fast_preprocessed.txt'
 conv_format: 'conversion_format.yaml'
-concat_csvs: 'create_csv_concatenate.py'
+concat_csvs: 'concatenate_relac.py'
 inputs_file: 'Inputs.csv'
 outputs_file: 'Outputs.csv'
 
 # Prefixes and suffixes
-prefix_final_files: 'REALC_TX_'
+prefix_final_files: 'RELAC_TX_'
 preprocess_data_name: 'Pre_processed_'
 output_files: '_output'
 
@@ -26,13 +27,39 @@ output_files: '_output'
 
 # Configuration parameters
 ########################################################################################
-solver: 'cbc' # Could you use: 'glpk', 'cbc' and 'cplex'
+solver: 'cplex' # Could you use: 'glpk', 'cbc' and 'cplex'
 
 # For CBC use
-iteration_time: 60
+iteration_time: 20000
 
 # For CPLEX use
-cplex_threads: 2
+cplex_threads: 12
 
 # For delete intermediate files
 del_files: True
+
+# For run only the main scenarios
+only_main_scenario: False
+
+# Paralle scenarios
+parallel: False
+# Number of scenario per run
+max_x_per_iter: 2
+
+# Write A2 otoole outputs
+A2_otoole_outputs: True
+
+# Write txt model
+write_txt_model: True
+
+# Create matrixes
+create_matrix: True
+
+# Execute OSeMOSYS model
+execute_model: True
+
+# Concatenate otoole csv
+concat_otoole_csv: True
+
+# Concatenate scenarios csv
+concat_scenarios_csv: True

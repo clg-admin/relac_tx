@@ -3,8 +3,31 @@
 
 # List of country codes
 countries:
-  - CRI       # Costa Rica, default region XX
-  - PAN       # Panama, default region XX
+  - "JAM"
+  - "BOL"
+  - "CHL"
+  - "COL"
+  - "CRI"
+  - "ECU"
+  - "SLV"
+  - "GTM"
+  - "HTI"
+  - "HND"
+  - "NIC"
+  - "PAN"
+  - "PRY"
+  - "PER"
+  - "DOM"
+  - "URY"
+  - "BRACN"
+  - "BRANE"
+  - "BRASE"
+  - "BRASO"
+  - "BRACW"
+  - "BRAWE"
+  - "BRANW"
+  - "MEX"
+  - "ARG"
 
 # Technology parameters
 # Renewable transmission technologies
