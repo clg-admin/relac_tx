@@ -1,0 +1,31 @@
+# folders
+t1_confection/A2_Output_Params
+t1_confection/Executables
+config_main_files
+Concatenate_otoole_outputs
+
+# Excel files
+t1_confection/_GDP_Ref.xlsx
+t1_confection/A2_Structure_Lists.xlsx
+t1_confection/requirements
+
+# Python scripts
+t1_confection/setup_utils.py
+t1_confection/maxcapacity.py
+concatenate_files/test_inputs.py
+
+# Pickle files
+t1_confection/Blend_Shares_0.pickle
+
+# figs
+RELAC_cambiarporfecha.twbx
+
+# logs
+t1_confection/cplex.log
+t1_confection/clone1.log
+t1_confection/clone2.log
+dvc.lock
+
+# guides
+RELAC_TX_Guia_instalacion_ejecucion.md
+RELAC_TX_Guia_instalacion_ejecucion.docx
