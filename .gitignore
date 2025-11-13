@@ -8,6 +8,11 @@ Concatenate_otoole_outputs
 t1_confection/_GDP_Ref.xlsx
 t1_confection/A2_Structure_Lists.xlsx
 t1_confection/requirements
+t1_confection/COSTS_ENERGY_BE_Anualized.csv
+t1_confection/Discounted_Rate.xlsx
+t1_confection/RELAC_TX_Combined_Inputs_Outputs.csv
+t1_confection/RELAC_TX_Inputs.csv
+t1_confection/RELAC_TX_Outputs.csv
 
 # Python scripts
 t1_confection/setup_utils.py
@@ -24,8 +29,7 @@ RELAC_cambiarporfecha.twbx
 t1_confection/cplex.log
 t1_confection/clone1.log
 t1_confection/clone2.log
-dvc.lock
 
 # guides
 RELAC_TX_Guia_instalacion_ejecucion.md
-RELAC_TX_Guia_instalacion_ejecucion.docx
+RELAC_TX_Guia_instalacion_ejecucion.pdf

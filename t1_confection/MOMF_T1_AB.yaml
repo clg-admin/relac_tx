@@ -63,3 +63,6 @@ concat_otoole_csv: True
 
 # Concatenate scenarios csv
 concat_scenarios_csv: True
+
+# Annualize capital investment
+annualize_capital: True

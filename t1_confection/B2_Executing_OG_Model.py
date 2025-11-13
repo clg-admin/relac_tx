@@ -721,10 +721,50 @@ if __name__ == "__main__":
         print(f'✅ Concatenate inputs and outputs for all scenarios successfully.')
         print(f'The name files are: ({input_output_path}), ({output_output_path}) and ({combined_output_path})')
     ###############################################################################################
-    
-    
-    
-    
+
+    ###############################################################################################
+    # Annualize capital investment
+    if params.get('annualize_capital', False):
+        try:
+            print('\n')
+            print('#'*80)
+            print('# CAPITAL INVESTMENT ANNUALIZATION')
+            print('#'*80)
+
+            # Import the annualization function
+            from capital_annualization_script import annualize_capital_investment
+
+            # Define the path to the combined file
+            combined_file_path = os.path.join(HERE, params['prefix_final_files'] + 'Combined_Inputs_Outputs.csv')
+
+            # Check if file exists
+            if os.path.exists(combined_file_path):
+                print(f'Starting annualization for: {combined_file_path}')
+
+                # Call the annualization function
+                annualize_capital_investment(
+                    input_file_path=combined_file_path,
+                    verbose=True
+                )
+
+                print(f'✅ Capital investment annualization completed successfully.')
+                print('#'*80)
+            else:
+                print(f'⚠️  WARNING: Combined file not found at {combined_file_path}')
+                print('Skipping capital investment annualization.')
+                print('#'*80)
+
+        except Exception as e:
+            print(f'❌ ERROR during capital investment annualization: {e}')
+            print('Continuing without annualization...')
+            import traceback
+            traceback.print_exc()
+            print('#'*80)
+    ###############################################################################################
+
+
+
+
     # # 1. Carga los dataframes desde los CSV
     # df_inputs_all = pd.read_csv('REALC_TX_Inputs.csv', low_memory=False)
     # df_outputs_all = pd.read_csv('REALC_TX_Outputs.csv', low_memory=False)
