@@ -1561,7 +1561,7 @@ time_elapsed_1 = -start1 + end_1
 print( str( time_elapsed_1 ) + ' seconds /', str( time_elapsed_1/60 ) + ' minutes' )
 print('*: For all effects, we have finished the processing tasks of this script. We must now print the results out.')
 #***********************************************************************************
-'''
+
 #---------------------------------
 # Print updated demand DF (user)
 writer_Demand_df_new = pd.ExcelWriter(os.path.join(params['A1_outputs'],params['A1_outputs'] + '_' + params['xtra_scen']['Main_Scenario'] + params['Print_Dem_Completed']), engine='xlsxwriter')
@@ -1598,7 +1598,7 @@ for s in range( len( param_sheets_print ) ):
 writer_AR_Proj_df.close()
 #
 #***********************************************************************************
-'''
+
 #
 #***********************************************************************************
 #
