@@ -29,6 +29,7 @@ RELAC_cambiarporfecha.twbx
 t1_confection/cplex.log
 t1_confection/clone1.log
 t1_confection/clone2.log
+t1_confection/gurobi.log
 
 # guides
 RELAC_TX_Guia_instalacion_ejecucion.md

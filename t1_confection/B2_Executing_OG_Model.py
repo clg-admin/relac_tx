@@ -278,15 +278,31 @@ def main_executer(params, scenario_name, HERE):
             if params['execute_model']:
                 if os.path.exists(output_file + '.sol'):
                     os.remove(output_file + '.sol')
-            
+
                 # Number of threads cplex use
                 cplex_threads = params['cplex_threads']
-                                           
+
                 check_enviro_variables('cplex')
-                    
+
                 # Composing the command for CPLEX solver
                 str_solve = f'cplex -c "read {output_file}.lp" "set threads {cplex_threads}" "optimize" "write {output_file}.sol"'
                 commands.append(str_solve)
+
+        elif solver == 'gurobi':
+            # Using Gurobi solver
+            if params['execute_model']:
+                if os.path.exists(output_file + '.sol'):
+                    os.remove(output_file + '.sol')
+
+                # Number of threads gurobi use
+                gurobi_threads = params['gurobi_threads']
+
+                check_enviro_variables('gurobi_cl')
+
+                # Composing the command for Gurobi solver
+                str_solve = f'gurobi_cl Threads={gurobi_threads} ResultFile={output_file}.sol {output_file}.lp'
+                commands.append(str_solve)
+
     if params['execute_model'] or params['create_matrix']:
         for cmd in commands:
             subprocess.run(cmd, shell=True, check=True)
@@ -306,14 +322,14 @@ def main_executer(params, scenario_name, HERE):
         if params['execute_model']:
             subprocess.run(str_outputs, shell=True, check=True)
 
-    elif solver in ['cbc', 'cplex']:
-                                                                                                                    
+    elif solver in ['cbc', 'cplex', 'gurobi']:
+
         str_outputs = f'otoole results {solver} csv {output_file}.sol {file_path_outputs} csv {file_path_template} {file_path_conv_format} 2> {output_file}.log'
         if params['execute_model']:
             subprocess.run(str_outputs, shell=True, check=True)
-    
+
     # Module to concatenate csvs otoole outputs
-    if solver in ['glpk', 'cbc', 'cplex']:
+    if solver in ['glpk', 'cbc', 'cplex', 'gurobi']:
         file_conca_csvs = get_config_main_path(os.path.abspath(''), params['concatenate_folder'])
         script_concate_csv = os.path.join(file_conca_csvs, params['concat_csvs'])
         str_otoole_concate_csv = f'python -u {script_concate_csv} {file_path_outputs} {output_file}'  # last int is the ID tier
@@ -344,6 +360,11 @@ def delete_files(file, data_file, solver):
         for filename in ['cplex.log', 'clone1.log', 'clone2.log']:
             if os.path.exists(filename):
                 os.remove(filename)
+
+    # Delete log files when solver is 'gurobi' and del_files is True
+    if solver == 'gurobi':
+        if os.path.exists('gurobi.log'):
+            os.remove('gurobi.log')
 
 def read_csv_files(input_dir):
     """Reads all CSV files in the given directory and returns a dictionary of DataFrames."""
