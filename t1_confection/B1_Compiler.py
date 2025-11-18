@@ -1041,7 +1041,7 @@ for s in range( len( param_sheets ) ):
     params_dict_new_natural.update( { param_sheets[s]:this_df_new } ) # this has the model in natural terms
     #
 # After the loop, convert accumulated data into DataFrames and append them in bulk
-for param, rows in accumulated_data.items():
+for param, rows in sorted(accumulated_data.items()):  # Sort for deterministic order
     if rows:  # Check if there are rows to append for this parameter
         new_rows_df = pd.DataFrame(rows)
         if param in overall_param_df_dict:
@@ -1314,7 +1314,7 @@ for p in range(len(additional_params_list)):
             accumulated_data_by_param[this_param] = []
         accumulated_data_by_param[this_param].append(new_row)
 
-for param, rows in accumulated_data_by_param.items():
+for param, rows in sorted(accumulated_data_by_param.items()):  # Sort for deterministic order
     if rows:  # Check if there are rows to append for this parameter
         new_rows_df = pd.DataFrame(rows)
         # Check if the parameter already exists in overall_param_df_dict_ndp, if not, initialize it
@@ -1541,7 +1541,7 @@ if params['xtra_scen']['Timeslice'] == 'Some':
         overall_param_df_dict_ndp[this_param] = df_Conversions
     
     # After the loop, convert accumulated data into DataFrames and append them in bulk
-    for param, rows in accumulated_data_by_param_conversion.items():
+    for param, rows in sorted(accumulated_data_by_param_conversion.items()):  # Sort for deterministic order
         if rows:  # Check if there are rows to append for this parameter
             new_rows_df = pd.DataFrame(rows)
             # Check if the parameter already exists in overall_param_df_dict, if not, initialize it
@@ -1674,7 +1674,7 @@ for d in range(len(list_dicts)):
         header=True
     )
 
-for col_name, data_list in structure_dict.items():
+for col_name, data_list in sorted(structure_dict.items()):  # Sort for deterministic order
     df = pd.DataFrame({'VALUE': data_list})
     file_path = os.path.join(path_main_scenario, f'{col_name}.csv')
     df.to_csv(file_path, index=False, header=True)
@@ -1690,7 +1690,7 @@ if other_setup_params['Other_Scenarios']:
         os.makedirs(output_path, exist_ok=True)
 
         # Process and save DataFrames for this scenario
-        for name, df in overall_param_df_dict_ndp.items():
+        for name, df in sorted(overall_param_df_dict_ndp.items()):  # Sort for deterministic order
             # Replace the main scenario name with the current scenario
             df_scenario = df.replace({
                 'Scenario': {
@@ -1705,7 +1705,7 @@ if other_setup_params['Other_Scenarios']:
             )
 
         # Save structure reference lists as individual CSVs
-        for col_name, data_list in structure_dict.items():
+        for col_name, data_list in sorted(structure_dict.items()):  # Sort for deterministic order
             df_structure = pd.DataFrame({'VALUE': data_list})
             df_structure.to_csv(
                 os.path.join(output_path, f'{col_name}.csv'),

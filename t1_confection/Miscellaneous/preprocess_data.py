@@ -199,12 +199,12 @@ def main(data_infile, data_outfile):
                 param_current = details[-2]
                 parsing = True
 
-    data_out = list(set(data_out))
-    data_inp = list(set(data_inp))
-    data_all = list(set(data_all))
-    storage_to = list(set(storage_to))
-    storage_from = list(set(storage_from))
-    emission_table = list(set(emission_table))
+    data_out = sorted(list(set(data_out)))  # Sort for deterministic order
+    data_inp = sorted(list(set(data_inp)))  # Sort for deterministic order
+    data_all = sorted(list(set(data_all)))  # Sort for deterministic order
+    storage_to = sorted(list(set(storage_to)))  # Sort for deterministic order
+    storage_from = sorted(list(set(storage_from)))  # Sort for deterministic order
+    emission_table = sorted(list(set(emission_table)))  # Sort for deterministic order
 
     dict_out = defaultdict(list)
     dict_inp = defaultdict(list)
