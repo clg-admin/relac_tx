@@ -54,7 +54,7 @@ if __name__ == '__main__':
     tier_dir = outputs_folder
 
     if os.path.exists(tier_dir):
-        csv_file_list = os.listdir(tier_dir)
+        csv_file_list = sorted(os.listdir(tier_dir))  # Sort for deterministic order
         
 
         df_list = []
@@ -77,8 +77,8 @@ if __name__ == '__main__':
             
             df_list.append(local_df)
         columns_check.insert(0,'Parameter')
-        df_all = pd.concat(df_list, ignore_index=True, sort=False)
-        common_values = list(set(df_all.columns) & set(sets_csv_temp))
+        df_all = pd.concat(df_list, ignore_index=True, sort=True)  # Sort for deterministic column order
+        common_values = sorted(list(set(df_all.columns) & set(sets_csv_temp)))  # Sort for deterministic order
         df_all = df_all[ common_values ]
         
         # df_all.to_csv(f'Data_plots_{case}.csv')

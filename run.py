@@ -48,7 +48,10 @@ PIP_DEPS = {
 
 # ---------- Utilidades shell ----------
 def run(cmd: str) -> None:
-    subprocess.check_call(cmd, shell=True)
+    # Set PYTHONHASHSEED for deterministic hash-based operations
+    env = os.environ.copy()
+    env['PYTHONHASHSEED'] = '0'
+    subprocess.check_call(cmd, shell=True, env=env)
 
 def check_tool_available(tool: str) -> None:
     try:

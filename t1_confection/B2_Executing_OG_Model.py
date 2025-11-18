@@ -27,7 +27,7 @@ def sort_csv_files_in_folder(folder_path):
         return
     print('################################################################')
     print('Sort csv files.')
-    for filename in os.listdir(folder_path):
+    for filename in sorted(os.listdir(folder_path)):
         if filename.endswith(".csv"):
             file_path = os.path.join(folder_path, filename)
             print(f"Processing: {filename}")
@@ -62,7 +62,7 @@ def process_scenario_folder(base_input_path, template_path, base_output_path, sc
 
     # Step 3: Read and clean scenario CSVs
     scenario_files = {}
-    for f in os.listdir(scenario_input_path):
+    for f in sorted(os.listdir(scenario_input_path)):
         if f.endswith('.csv'):
             df = pd.read_csv(os.path.join(scenario_input_path, f))
 
@@ -79,7 +79,7 @@ def process_scenario_folder(base_input_path, template_path, base_output_path, sc
     # Step 4: Read template files
     template_files = {
         f: pd.read_csv(os.path.join(template_path, f))
-        for f in os.listdir(template_path)
+        for f in sorted(os.listdir(template_path))
         if f.endswith('.csv')
     }
 
@@ -378,7 +378,7 @@ def delete_files(file, data_file, solver):
 def read_csv_files(input_dir):
     """Reads all CSV files in the given directory and returns a dictionary of DataFrames."""
     data_dict = {}
-    for filename in os.listdir(input_dir):
+    for filename in sorted(os.listdir(input_dir)):
         if filename.endswith(".csv"):
             file_path = os.path.join(input_dir, filename)
             df = pd.read_csv(file_path)
@@ -396,8 +396,8 @@ def generate_combined_input_file(input_folder, output_folder, scenario_name):
 
     inputs_dataframes = []
     print(input_folder)
-    print(os.listdir(input_folder))
-    for filename in os.listdir(input_folder):
+    print(sorted(os.listdir(input_folder)))
+    for filename in sorted(os.listdir(input_folder)):
         if not filename.endswith(".csv"):
             continue
         key = filename.replace(".csv", "")
@@ -415,7 +415,7 @@ def generate_combined_input_file(input_folder, output_folder, scenario_name):
         return None, None
 
     # Concatenate all non-empty dataframes
-    inputs_data = pd.concat(inputs_dataframes, ignore_index=True, sort=False)
+    inputs_data = pd.concat(inputs_dataframes, ignore_index=True, sort=True)  # Sort for deterministic column order
 
     # Reorder columns
     present_keys = [col for col in keys_sets_delete if col in inputs_data.columns]
@@ -461,7 +461,7 @@ def concatenate_all_scenarios(HERE, params):
     combined_inputs_outputs = []
     base_input_path = params['executables']
 
-    for scenario_future_name in os.listdir(base_input_path):
+    for scenario_future_name in sorted(os.listdir(base_input_path)):
         if scenario_future_name.lower() in ['default', '__pycache__', 'local_dataset_creator_0.py']:
             continue
 
@@ -494,7 +494,7 @@ def concatenate_all_scenarios(HERE, params):
     # df_list = []
     # df_list.append(combined_inputs)
     # df_list.append(combined_outputs)
-    df_inputs_outputs_all = pd.concat([df_inputs_all,df_outputs_all], ignore_index=True, sort=False)
+    df_inputs_outputs_all = pd.concat([df_inputs_all,df_outputs_all], ignore_index=True, sort=True)  # Sort for deterministic column order
     
 
     # Función para reordenar columnas: metadata first, then alfabetico
@@ -508,6 +508,10 @@ def concatenate_all_scenarios(HERE, params):
     # 1) Guardar inputs
     if not df_inputs_all.empty:
         df_inputs_all = reorder_columns(df_inputs_all)
+        # Sort rows for deterministic output
+        sort_cols = [c for c in ['Future', 'Scenario', 'REGION', 'TECHNOLOGY', 'YEAR'] if c in df_inputs_all.columns]
+        if sort_cols:
+            df_inputs_all = df_inputs_all.sort_values(by=sort_cols).reset_index(drop=True)
         path_in = os.path.join(HERE,params['prefix_final_files'] + params['inputs_file'])
         df_inputs_all.to_csv(path_in, index=False)
         dated = path_in.replace('.csv', f'_{today}.csv')
@@ -518,6 +522,10 @@ def concatenate_all_scenarios(HERE, params):
     # 2) Guardar outputs
     if not df_outputs_all.empty:
         df_outputs_all = reorder_columns(df_outputs_all)
+        # Sort rows for deterministic output
+        sort_cols = [c for c in ['Future', 'Scenario', 'REGION', 'TECHNOLOGY', 'YEAR'] if c in df_outputs_all.columns]
+        if sort_cols:
+            df_outputs_all = df_outputs_all.sort_values(by=sort_cols).reset_index(drop=True)
         path_out = os.path.join(HERE,params['prefix_final_files'] + params['outputs_file'])
         df_outputs_all.to_csv(path_out, index=False)
         dated = path_out.replace('.csv', f'_{today}.csv')
@@ -531,6 +539,10 @@ def concatenate_all_scenarios(HERE, params):
         # df_combined = pd.concat([df_inputs_all, df_outputs_all],
         #                         ignore_index=True, sort=False)
         df_combined = reorder_columns(df_inputs_outputs_all)
+        # Sort rows for deterministic output
+        sort_cols = [c for c in ['Future', 'Scenario', 'REGION', 'TECHNOLOGY', 'YEAR'] if c in df_combined.columns]
+        if sort_cols:
+            df_combined = df_combined.sort_values(by=sort_cols).reset_index(drop=True)
         
         
         #########################################################################################
@@ -645,8 +657,8 @@ if __name__ == "__main__":
     base_input_path = os.path.join(HERE, params['A2_output'])
     template_path = os.path.join(HERE, params['Miscellaneous'], params['templates'])
     base_output_path = os.path.join(HERE, params['A2_output_otoole'])
-    
-    scenarios=os.listdir(base_input_path)
+
+    scenarios=sorted(os.listdir(base_input_path))
     try:
         scenarios.remove('Default')
     except ValueError:
