@@ -266,11 +266,14 @@ def main_executer(params, scenario_name, HERE):
             if params['execute_model']:
                 if os.path.exists(output_file + '.sol'):
                     os.remove(output_file + '.sol')
-                
+
                 check_enviro_variables('cbc')
-                
-                # Composing the command for CBC solver
-                str_solve = f'cbc {output_file}.lp -seconds {params["iteration_time"]} solve -solu {output_file}.sol'
+
+                # Get random seed for reproducibility
+                cbc_random_seed = params.get('cbc_random_seed', 12345)
+
+                # Composing the command for CBC solver with random seeds for deterministic behavior
+                str_solve = f'cbc {output_file}.lp randomSeed {cbc_random_seed} randomCbcSeed {cbc_random_seed} -seconds {params["iteration_time"]} solve -solu {output_file}.sol'
                 commands.append(str_solve)
             
         elif solver == 'cplex':
@@ -282,10 +285,13 @@ def main_executer(params, scenario_name, HERE):
                 # Number of threads cplex use
                 cplex_threads = params['cplex_threads']
 
+                # Get random seed for reproducibility
+                cplex_random_seed = params.get('cplex_random_seed', 12345)
+
                 check_enviro_variables('cplex')
 
-                # Composing the command for CPLEX solver
-                str_solve = f'cplex -c "read {output_file}.lp" "set threads {cplex_threads}" "optimize" "write {output_file}.sol"'
+                # Composing the command for CPLEX solver with random seed for deterministic behavior
+                str_solve = f'cplex -c "read {output_file}.lp" "set threads {cplex_threads}" "set randomseed {cplex_random_seed}" "set parallel 1" "optimize" "write {output_file}.sol"'
                 commands.append(str_solve)
 
         elif solver == 'gurobi':
@@ -297,10 +303,13 @@ def main_executer(params, scenario_name, HERE):
                 # Number of threads gurobi use
                 gurobi_threads = params['gurobi_threads']
 
+                # Get random seed for reproducibility
+                gurobi_seed = params.get('gurobi_seed', 12345)
+
                 check_enviro_variables('gurobi_cl')
 
-                # Composing the command for Gurobi solver
-                str_solve = f'gurobi_cl Threads={gurobi_threads} ResultFile={output_file}.sol {output_file}.lp'
+                # Composing the command for Gurobi solver with seed for deterministic behavior
+                str_solve = f'gurobi_cl Threads={gurobi_threads} Seed={gurobi_seed} ResultFile={output_file}.sol {output_file}.lp'
                 commands.append(str_solve)
 
     if params['execute_model'] or params['create_matrix']:
