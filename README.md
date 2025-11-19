@@ -1,1 +1,69 @@
-# relac_tx
+# RELAC TX - Energy System Optimization Model
+
+Sistema de modelado de optimización energética basado en OSeMOSYS para América Latina y el Caribe.
+
+## Descripción
+
+Este proyecto implementa un pipeline automatizado para la ejecución de modelos de optimización energética utilizando OSeMOSYS. El sistema soporta múltiples solvers (GLPK, CBC, CPLEX, Gurobi) y está diseñado para garantizar reproducibilidad completa de los resultados.
+
+## Características Principales
+
+- **Pipeline Automatizado**: Gestión completa del flujo de trabajo con DVC
+- **Múltiples Solvers**: Soporte para GLPK, CBC, CPLEX y Gurobi
+- **Reproducibilidad Garantizada**: Seeds configurables para resultados determinísticos
+- **Medición de Rendimiento**: Timer integrado para monitorear tiempos de ejecución
+- **Gestión Automática de Entorno**: Creación y actualización automática del entorno Conda
+
+## Requisitos del Sistema
+
+- Windows 10 o superior
+- Git para Windows
+- Miniconda o Anaconda
+- Al menos un solver: GLPK, CBC, CPLEX o Gurobi
+
+## Inicio Rápido
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/clg-admin/relac_tx.git
+cd relac_tx
+
+# Ejecutar el modelo (desde Anaconda Prompt)
+python run.py
+```
+
+El script `run.py` gestiona automáticamente:
+- Creación del entorno Conda
+- Instalación de dependencias
+- Ejecución del pipeline completo
+- Generación de archivos de salida
+
+## Documentación
+
+Para instrucciones detalladas de instalación y configuración, consulta la guía completa:
+- **Guía de Instalación y Ejecución**: `RELAC_TX_Guia_instalacion_ejecucion.md`
+
+## Estructura de Archivos de Salida
+
+Los resultados se generan en `t1_confection/` con los siguientes archivos:
+- `RELAC_TX_Inputs.csv` / `RELAC_TX_Inputs_YYYY-MM-DD.csv`
+- `RELAC_TX_Outputs.csv` / `RELAC_TX_Outputs_YYYY-MM-DD.csv`
+- `RELAC_TX_Combined_Inputs_Outputs.csv` / `RELAC_TX_Combined_Inputs_Outputs_YYYY-MM-DD.csv`
+
+Los archivos con fecha mantienen un histórico completo de ejecuciones.
+
+## Configuración
+
+El archivo principal de configuración es `t1_confection/MOMF_T1_AB.yaml`, donde puedes ajustar:
+- Solver a utilizar (`solver: 'cplex'`)
+- Número de threads para solvers comerciales
+- Seeds para reproducibilidad
+- Anualización de capital (`annualize_capital`)
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+Copyright (c) 2025 Climate Lead Group
+
+Este proyecto está desarrollado por Climate Lead Group para análisis de sistemas energéticos en América Latina y el Caribe.
