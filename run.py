@@ -293,9 +293,24 @@ def main():
 
         # 6) Reproducir pipeline
         print("🔄 dvc repro…")
+        start_time = dt.datetime.now()
         dvc_command(env_name, "repro")
+        end_time = dt.datetime.now()
 
-        print("✅ ¡Pipeline completado!")
+        # Calculate and display duration
+        duration = end_time - start_time
+        total_seconds = int(duration.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        duration_str = []
+        if hours > 0:
+            duration_str.append(f"{hours}h")
+        if minutes > 0 or hours > 0:
+            duration_str.append(f"{minutes}m")
+        duration_str.append(f"{seconds}s")
+
+        print(f"✅ ¡Pipeline completado en {' '.join(duration_str)}!")
 
     finally:
         # 7) Restaurar dvc.yaml y borrar backup
