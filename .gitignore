@@ -30,6 +30,12 @@ t1_confection/cplex.log
 t1_confection/clone1.log
 t1_confection/clone2.log
 t1_confection/gurobi.log
+t1_confection/secondary_techs_update_log_*.txt
 
 # guides
 RELAC_TX_Guia_instalacion_ejecucion.pdf
+
+# Secondary Techs Editor - temporary files
+t1_confection/Secondary_Techs_Editor.xlsx
+t1_confection/~$Secondary_Techs_Editor.xlsx
+t1_confection/A1_Outputs/*/A-O_Parametrization_backup_*.xlsx
