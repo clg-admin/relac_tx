@@ -157,7 +157,7 @@ class SecondaryTechsUpdater:
         shutil.copy2(file_path, backup_path)
         return backup_path
 
-    def find_and_update_row(self, ws, tech, parameter, year_values, year_col_map):
+    def find_and_update_row(self, ws, tech, parameter, year_values, year_col_map, projection_mode_col):
         """
         Find the row matching tech and parameter, and update year values
 
@@ -187,6 +187,13 @@ class SecondaryTechsUpdater:
                 ws.cell(target_row, col_idx, value)
                 values_updated += 1
 
+        # Set Projection.Mode to "User defined" if column exists
+        if projection_mode_col:
+            current_value = ws.cell(target_row, projection_mode_col).value
+            if current_value != "User defined":
+                ws.cell(target_row, projection_mode_col, "User defined")
+                self.log(f"    Set Projection.Mode to 'User defined' (was: '{current_value}')", "DEBUG")
+
         return True, f"Row {target_row} updated with {values_updated} year values", values_updated
 
     def apply_instruction_to_scenario(self, instruction, scenario):
@@ -215,17 +222,24 @@ class SecondaryTechsUpdater:
 
             ws = wb['Secondary Techs']
 
-            # Build year column map
+            # Build year column map and find Projection.Mode column
             headers = [cell.value for cell in ws[1]]
             year_col_map = {}
+            projection_mode_col = None
+
             for col_idx, header in enumerate(headers, 1):
-                if header and str(header).isdigit():
-                    try:
-                        year = int(header)
-                        if 2000 <= year <= 2100:
-                            year_col_map[year] = col_idx
-                    except:
-                        pass
+                if header:
+                    # Check for year columns
+                    if str(header).isdigit():
+                        try:
+                            year = int(header)
+                            if 2000 <= year <= 2100:
+                                year_col_map[year] = col_idx
+                        except:
+                            pass
+                    # Check for Projection.Mode column
+                    elif str(header).strip() == "Projection.Mode":
+                        projection_mode_col = col_idx
 
             # Apply update
             success, message, values_updated = self.find_and_update_row(
@@ -233,7 +247,8 @@ class SecondaryTechsUpdater:
                 instruction['tech'],
                 instruction['parameter'],
                 instruction['year_values'],
-                year_col_map
+                year_col_map,
+                projection_mode_col
             )
 
             if success:

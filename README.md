@@ -60,6 +60,42 @@ El archivo principal de configuración es `t1_confection/MOMF_T1_AB.yaml`, donde
 - Seeds para reproducibilidad
 - Anualización de capital (`annualize_capital`)
 
+## Editor de Tecnologías Secundarias
+
+El proyecto incluye un sistema para facilitar la edición de tecnologías secundarias (Secondary Techs) en los archivos de parametrización.
+
+### Uso del Editor
+
+1. **Generar plantilla de edición**:
+   ```bash
+   python t1_confection/D1_generate_editor_template.py
+   ```
+   Esto crea el archivo `Secondary_Techs_Editor.xlsx` con listas desplegables para facilitar la edición.
+
+2. **Editar valores**:
+   - Abrir `Secondary_Techs_Editor.xlsx`
+   - Seleccionar: Escenario (BAU, NDC, NDC+ELC, NDC_NoRPO, o ALL)
+   - Seleccionar: País, Tecnología y Parámetro
+   - Ingresar los valores para los años deseados
+
+3. **Aplicar cambios**:
+   ```bash
+   python t1_confection/D2_update_secondary_techs.py
+   ```
+   Este script:
+   - Crea respaldos automáticos de los archivos originales
+   - Aplica los cambios a los escenarios correspondientes
+   - Actualiza automáticamente el campo `Projection.Mode` a "User defined"
+   - Genera un log detallado de todas las operaciones
+
+### Características del Editor
+
+- **Listas desplegables**: Facilitan la selección de escenarios, países, tecnologías y parámetros
+- **Validación automática**: Verifica que los datos sean consistentes antes de aplicar cambios
+- **Respaldos automáticos**: Crea copias de seguridad con timestamp antes de modificar archivos
+- **Aplicación a múltiples escenarios**: Usa "ALL" para aplicar cambios a todos los escenarios a la vez
+- **Logs detallados**: Registro completo de cambios aplicados y errores encontrados
+
 ## Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles.
