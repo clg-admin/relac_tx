@@ -8,11 +8,55 @@ Usage:
     python t1_confection/generate_editor_template.py
 """
 import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Protection
+from openpyxl.styles import Font, PatternFill, Alignment, Protection, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 import sys
 from pathlib import Path
 from datetime import datetime
+
+# OLADE country name to ISO-3 code mapping
+OLADE_COUNTRY_MAPPING = {
+    'Argentina': 'ARG',
+    'Barbados': 'BAR',
+    'Belice': 'BLZ',
+    'Bolivia': 'BOL',
+    'Brasil': 'BRA',
+    'Chile': 'CHI',
+    'Colombia': 'COL',
+    'Costa Rica': 'CRC',
+    'Cuba': 'CUB',
+    'Ecuador': 'ECU',
+    'El Salvador': 'SLV',
+    'Grenada': 'GRD',
+    'Guatemala': 'GTM',
+    'Guyana': 'GUY',
+    'Haiti': 'HTI',
+    'Honduras': 'HND',
+    'Jamaica': 'JAM',
+    'México': 'MEX',
+    'Nicaragua': 'NIC',
+    'Panamá': 'PAN',
+    'Paraguay': 'PRY',
+    'Perú': 'PER',
+    'República Dominicana': 'DOM',
+    'Suriname': 'SUR',
+    'Trinidad & Tobago': 'TTO',
+    'Uruguay': 'URY',
+    'Venezuela': 'VEN'
+}
+
+# OLADE technology to model tech code (3 chars) mapping
+OLADE_TECH_MAPPING = {
+    'Nuclear': 'URN',
+    'Gas natural': 'CCG',
+    'Carbón mineral': 'COA',
+    'Hidro': 'HYD',
+    'Geotermia': 'GEO',
+    'Eólica': 'WON',
+    'Solar': 'SPV'
+    # Note: BIO is special - sum of 'Biogás' + 'Biomasa sólida'
+    # Note: 'Petróleo y derivados' pending confirmation
+}
 
 
 def collect_data_from_all_scenarios():
@@ -244,18 +288,101 @@ def create_editor_template(data, output_path):
     # Freeze panes (freeze first row and first 5 columns)
     ws_main.freeze_panes = 'F2'
 
-    # Add instructions in a separate sheet
+    # Add instructions in a separate sheet (first sheet - index 0)
     ws_instructions = wb.create_sheet("Instructions", 0)
     ws_instructions.column_dimensions['A'].width = 80
 
+    # Add OLADE Configuration sheet (second sheet - index 1)
+    ws_olade = wb.create_sheet("OLADE_Config", 1)
+    ws_olade.column_dimensions['A'].width = 80
+    ws_olade.column_dimensions['B'].width = 20
+
+    # Style for configuration sheet
+    header_fill_config = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")
+    header_font_config = Font(bold=True, color="FFFFFF", size=12)
+    border_style = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Title
+    cell = ws_olade.cell(1, 1, "OLADE CONFIGURATION")
+    cell.font = Font(size=14, bold=True, color="366092")
+    ws_olade.merge_cells('A1:B1')
+
+    # Instructions
+    ws_olade.cell(2, 1, "Fill in the configuration below to automatically populate ResidualCapacity from OLADE data")
+    ws_olade.merge_cells('A2:B2')
+    ws_olade.cell(2, 1).font = Font(italic=True)
+
+    # Configuration headers
+    ws_olade.cell(4, 1, "Configuration Parameter").fill = header_fill_config
+    ws_olade.cell(4, 1).font = header_font_config
+    ws_olade.cell(4, 1).border = border_style
+    ws_olade.cell(4, 2, "Value").fill = header_fill_config
+    ws_olade.cell(4, 2).font = header_font_config
+    ws_olade.cell(4, 2).border = border_style
+
+    # ResidualCapacitiesFromOLADE
+    ws_olade.cell(5, 1, "ResidualCapacitiesFromOLADE").border = border_style
+    ws_olade.cell(5, 2, "NO").border = border_style
+    dv_yes_no = DataValidation(type="list", formula1='"YES,NO"', allow_blank=False)
+    ws_olade.add_data_validation(dv_yes_no)
+    dv_yes_no.add('B5')
+
+    # CapacityFactorGrowth
+    ws_olade.cell(6, 1, "CapacityFactorGrowth (%)").border = border_style
+    ws_olade.cell(6, 2, 5.0).border = border_style
+    ws_olade.cell(6, 2).number_format = '0.00'
+
+    # GrowthType
+    ws_olade.cell(7, 1, "GrowthType").border = border_style
+    ws_olade.cell(7, 2, "Compound").border = border_style
+    dv_growth = DataValidation(type="list", formula1='"Compound,Simple"', allow_blank=False)
+    ws_olade.add_data_validation(dv_growth)
+    dv_growth.add('B7')
+
+    # Add descriptions
+    ws_olade.cell(9, 1, "DESCRIPTIONS:")
+    ws_olade.cell(9, 1).font = Font(bold=True, size=11)
+    ws_olade.merge_cells('A9:B9')
+
+    descriptions = [
+        ("ResidualCapacitiesFromOLADE:", "Set to YES to automatically populate ResidualCapacity parameter from OLADE data. This applies only to PWR technologies (power generation). OLADE data is automatically converted from MW to GW."),
+        ("CapacityFactorGrowth (%):", "Growth rate to apply for years before and after the OLADE reference year (2023). Example: 5.0 means 5% growth per year."),
+        ("GrowthType:", "Compound: Exponential growth (e.g., 2024 = 2023 × (1+rate)^1). Simple: Linear growth (e.g., 2024 = 2023 + 2023×rate)."),
+    ]
+
+    current_row = 11
+    for label, desc in descriptions:
+        # Label in bold
+        ws_olade.cell(current_row, 1, label)
+        ws_olade.cell(current_row, 1).font = Font(bold=True, size=10)
+        ws_olade.merge_cells(f'A{current_row}:B{current_row}')
+        current_row += 1
+
+        # Description
+        ws_olade.cell(current_row, 1, desc)
+        ws_olade.cell(current_row, 1).font = Font(size=9)
+        ws_olade.cell(current_row, 1).alignment = Alignment(wrap_text=True, vertical="top")
+        ws_olade.merge_cells(f'A{current_row}:B{current_row}')
+        current_row += 1
+
+        # Blank line
+        current_row += 1
+
+    # Populate instructions sheet
     instructions = [
         ["Secondary Techs Editor - Instructions", ""],
         ["", ""],
         ["This Excel file allows you to edit Secondary Techs data easily.", ""],
         ["", ""],
         ["HOW TO USE:", ""],
-        ["1. Go to the 'Editor' sheet", ""],
-        ["2. Fill in each row with:", ""],
+        ["1. (Optional) Configure OLADE settings in 'OLADE_Config' sheet", ""],
+        ["2. Go to the 'Editor' sheet", ""],
+        ["3. Fill in each row with:", ""],
         ["   - Scenario: Select BAU, NDC, NDC+ELC, NDC_NoRPO, or ALL (applies to all scenarios)", ""],
         ["   - Country: Select the country code (ARG, BOL, CHI, COL, ECU, GUA, etc.)", ""],
         ["   - Tech.Name: Select the descriptive technology name from the dropdown", ""],
@@ -263,8 +390,15 @@ def create_editor_template(data, output_path):
         ["   - Parameter: Select the parameter to modify", ""],
         ["   - Year values: Enter numeric values for each year (leave empty to keep current value)", ""],
         ["", ""],
-        ["3. Save and close this file", ""],
-        ["4. Run: python t1_confection/update_secondary_techs.py", ""],
+        ["4. Save and close this file", ""],
+        ["5. Run: python t1_confection/D2_update_secondary_techs.py", ""],
+        ["", ""],
+        ["OLADE INTEGRATION:", ""],
+        ["- If ResidualCapacitiesFromOLADE = YES in OLADE_Config sheet:", ""],
+        ["  * The script will automatically populate ResidualCapacity for PWR technologies", ""],
+        ["  * Data comes from 'Capacidad instalada por fuente - Anual - OLADE.xlsx'", ""],
+        ["  * OLADE data takes priority over manual Editor entries for ResidualCapacity", ""],
+        ["  * Growth rate is applied for years before/after the reference year (2023)", ""],
         ["", ""],
         ["IMPORTANT NOTES:", ""],
         ["- You can add as many rows as needed", ""],
@@ -281,7 +415,7 @@ def create_editor_template(data, output_path):
         cell = ws_instructions.cell(row_idx, 1, row_data[0])
         if row_idx == 1:
             cell.font = Font(size=16, bold=True, color="366092")
-        elif row_data[0].startswith("HOW TO USE:") or row_data[0].startswith("IMPORTANT NOTES:"):
+        elif row_data[0].startswith("HOW TO USE:") or row_data[0].startswith("IMPORTANT NOTES:") or row_data[0].startswith("OLADE INTEGRATION:"):
             cell.font = Font(size=12, bold=True)
 
         cell.alignment = Alignment(wrap_text=True, vertical="top")

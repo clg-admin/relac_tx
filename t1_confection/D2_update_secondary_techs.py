@@ -5,7 +5,7 @@ This script reads the Secondary_Techs_Editor.xlsx file and applies
 the changes to the corresponding A-O_Parametrization.xlsx files.
 
 Usage:
-    python t1_confection/update_secondary_techs.py
+    python t1_confection/D2_update_secondary_techs.py
 """
 import openpyxl
 import sys
@@ -13,15 +13,221 @@ from pathlib import Path
 from datetime import datetime
 import shutil
 
+# OLADE country name to ISO-3 code mapping
+OLADE_COUNTRY_MAPPING = {
+    'Argentina': 'ARG',
+    'Barbados': 'BAR',
+    'Belice': 'BLZ',
+    'Bolivia': 'BOL',
+    'Brasil': 'BRA',
+    'Chile': 'CHI',
+    'Colombia': 'COL',
+    'Costa Rica': 'CRC',
+    'Cuba': 'CUB',
+    'Ecuador': 'ECU',
+    'El Salvador': 'SLV',
+    'Grenada': 'GRD',
+    'Guatemala': 'GTM',
+    'Guyana': 'GUY',
+    'Haiti': 'HTI',
+    'Honduras': 'HND',
+    'Jamaica': 'JAM',
+    'México': 'MEX',
+    'Nicaragua': 'NIC',
+    'Panamá': 'PAN',
+    'Paraguay': 'PRY',
+    'Perú': 'PER',
+    'República Dominicana': 'DOM',
+    'Suriname': 'SUR',
+    'Trinidad & Tobago': 'TTO',
+    'Uruguay': 'URY',
+    'Venezuela': 'VEN'
+}
+
+# OLADE technology to model tech code (3 chars) mapping
+OLADE_TECH_MAPPING = {
+    'Nuclear': 'URN',
+    'Gas natural': 'CCG',
+    'Carbón mineral': 'COA',
+    'Hidro': 'HYD',
+    'Geotermia': 'GEO',
+    'Eólica': 'WON',
+    'Solar': 'SPV'
+    # Note: BIO is special - sum of 'Biogás' + 'Biomasa sólida'
+    # Note: 'Petróleo y derivados' pending confirmation
+}
+
+
+def read_olade_config(editor_path):
+    """
+    Read OLADE configuration from the editor Excel file
+
+    Returns:
+        dict with config: {enabled, growth_rate, growth_type}
+    """
+    wb = openpyxl.load_workbook(editor_path, data_only=True)
+
+    if 'OLADE_Config' not in wb.sheetnames:
+        wb.close()
+        return {'enabled': False, 'growth_rate': 0.0, 'growth_type': 'Compound'}
+
+    ws = wb['OLADE_Config']
+
+    # Read configuration values (B5, B6, B7)
+    enabled = str(ws['B5'].value).upper() == 'YES' if ws['B5'].value else False
+    growth_rate = float(ws['B6'].value) if ws['B6'].value else 5.0
+    growth_type = str(ws['B7'].value) if ws['B7'].value else 'Compound'
+
+    wb.close()
+
+    return {
+        'enabled': enabled,
+        'growth_rate': growth_rate,
+        'growth_type': growth_type
+    }
+
+
+def read_olade_data(olade_file_path):
+    """
+    Read OLADE capacity data from Excel file
+
+    Note: OLADE data is in MW, but is converted to GW for the model (1 GW = 1000 MW)
+
+    Returns:
+        dict: {
+            'reference_year': int,
+            'data': {
+                country_iso3: {
+                    tech_code: capacity_gw
+                }
+            }
+        }
+    """
+    if not olade_file_path.exists():
+        raise FileNotFoundError(f"OLADE file not found: {olade_file_path}")
+
+    wb = openpyxl.load_workbook(olade_file_path, data_only=True)
+    ws = wb['1.2023']
+
+    # Extract reference year from A4
+    ref_year_cell = ws['A4'].value
+    ref_year = 2023  # Default
+    if ref_year_cell and str(ref_year_cell).startswith('2023'):
+        ref_year = 2023
+
+    # Get country columns from row 5 (starting at column 3)
+    country_columns = {}
+    for col_idx in range(3, ws.max_column + 1):
+        country_name = ws.cell(5, col_idx).value
+        if country_name and str(country_name) in OLADE_COUNTRY_MAPPING:
+            iso3_code = OLADE_COUNTRY_MAPPING[str(country_name)]
+            country_columns[col_idx] = iso3_code
+
+    # Read technology data (rows 6-20)
+    data = {}
+
+    # Process each technology
+    for row_idx in range(6, 21):
+        tech_name = ws.cell(row_idx, 1).value
+        if not tech_name:
+            continue
+
+        tech_name_str = str(tech_name).strip()
+
+        # Skip non-applicable technologies
+        if tech_name_str in ['Térmica no renovable (combustión)', 'Otras fuentes',
+                             'Térmica renovable (combustión)', 'Fuentes renovable (no combustión)',
+                             'Biocombustibles líquidos', 'Total']:
+            continue
+
+        # Map OLADE tech name to model tech code
+        tech_code = None
+        if tech_name_str in OLADE_TECH_MAPPING:
+            tech_code = OLADE_TECH_MAPPING[tech_name_str]
+
+        # Special handling for BIO (sum of Biogás and Biomasa sólida)
+        if tech_name_str == 'Biogás':
+            tech_code = 'BIO'
+        elif tech_name_str == 'Biomasa sólida':
+            tech_code = 'BIO'
+
+        if not tech_code:
+            continue
+
+        # Read capacity values for each country
+        for col_idx, country_iso3 in country_columns.items():
+            capacity = ws.cell(row_idx, col_idx).value
+
+            if capacity is not None and capacity != '':
+                try:
+                    capacity_mw = float(capacity)
+
+                    # Convert from MW to GW (1 GW = 1000 MW)
+                    capacity_gw = capacity_mw / 1000.0
+
+                    # Initialize country if not exists
+                    if country_iso3 not in data:
+                        data[country_iso3] = {}
+
+                    # For BIO, sum Biogás + Biomasa sólida
+                    if tech_code == 'BIO':
+                        if tech_code in data[country_iso3]:
+                            data[country_iso3][tech_code] += capacity_gw
+                        else:
+                            data[country_iso3][tech_code] = capacity_gw
+                    else:
+                        data[country_iso3][tech_code] = capacity_gw
+
+                except ValueError:
+                    pass
+
+    wb.close()
+
+    return {
+        'reference_year': ref_year,
+        'data': data
+    }
+
+
+def calculate_capacity_for_year(base_capacity, base_year, target_year, growth_rate, growth_type):
+    """
+    Calculate capacity for a target year based on growth rate
+
+    Args:
+        base_capacity: Capacity at base year (GW)
+        base_year: Reference year
+        target_year: Year to calculate
+        growth_rate: Growth rate as percentage (e.g., 5.0 for 5%)
+        growth_type: 'Compound' or 'Simple'
+
+    Returns:
+        Calculated capacity (GW)
+    """
+    years_diff = target_year - base_year
+    rate = growth_rate / 100.0
+
+    if years_diff == 0:
+        return base_capacity
+
+    if growth_type == 'Compound':
+        # Exponential growth: capacity = base * (1 + rate)^years_diff
+        return base_capacity * ((1 + rate) ** years_diff)
+    else:  # Simple
+        # Linear growth: capacity = base + (base * rate * years_diff)
+        return base_capacity + (base_capacity * rate * years_diff)
+
 
 class SecondaryTechsUpdater:
-    def __init__(self, editor_path, base_path):
+    def __init__(self, editor_path, base_path, olade_file_path=None):
         self.editor_path = editor_path
         self.base_path = base_path
+        self.olade_file_path = olade_file_path
         self.scenarios = ["BAU", "NDC", "NDC+ELC", "NDC_NoRPO"]
         self.log_lines = []
         self.changes_applied = 0
         self.rows_failed = 0
+        self.olade_config = None
+        self.olade_data = None
 
     def log(self, message, level="INFO"):
         """Add message to log"""
@@ -131,6 +337,10 @@ class SecondaryTechsUpdater:
         if instruction['scenario'] not in valid_scenarios:
             return False, f"Invalid scenario '{instruction['scenario']}'. Must be one of: {valid_scenarios}"
 
+        # Skip tech validation for OLADE instructions (they use 3-char codes)
+        if instruction.get('is_olade'):
+            return True, None
+
         # Validate that tech contains country code (for PWR technologies: PWRTRNARGXX -> ARG is at position 6-8)
         tech = instruction['tech'].upper()
         country = instruction['country'].upper()
@@ -157,44 +367,80 @@ class SecondaryTechsUpdater:
         shutil.copy2(file_path, backup_path)
         return backup_path
 
-    def find_and_update_row(self, ws, tech, parameter, year_values, year_col_map, projection_mode_col):
+    def find_and_update_row(self, ws, tech, parameter, year_values, year_col_map, projection_mode_col, is_olade=False, country=None):
         """
         Find the row matching tech and parameter, and update year values
+
+        Args:
+            is_olade: If True, tech is a 3-char code and we need to match PWR technologies by first 9 chars
+            country: Country code (needed for OLADE matching)
 
         Returns:
             (success, message, values_updated)
         """
         # Search for matching row
         # Columns in Secondary Techs: 1=Tech.Id, 2=Tech, 3=Tech.Name, 5=Parameter
-        target_row = None
+        target_rows = []
+
         for row_idx in range(2, ws.max_row + 1):
             row_tech = ws.cell(row_idx, 2).value  # Column 2: Tech
             row_param = ws.cell(row_idx, 5).value  # Column 5: Parameter
 
-            if row_tech and row_param:
-                if str(row_tech).strip() == tech and str(row_param).strip() == parameter:
-                    target_row = row_idx
-                    break
+            if not row_tech or not row_param:
+                continue
 
-        if not target_row:
-            return False, f"No matching row found for Tech='{tech}' and Parameter='{parameter}'", 0
+            row_tech_str = str(row_tech).strip()
+            row_param_str = str(row_param).strip()
 
-        # Update year values
-        values_updated = 0
-        for year, value in year_values.items():
-            if year in year_col_map:
-                col_idx = year_col_map[year]
-                ws.cell(target_row, col_idx, value)
-                values_updated += 1
+            # Check parameter match
+            if row_param_str != parameter:
+                continue
 
-        # Set Projection.Mode to "User defined" if column exists
-        if projection_mode_col:
-            current_value = ws.cell(target_row, projection_mode_col).value
-            if current_value != "User defined":
-                ws.cell(target_row, projection_mode_col, "User defined")
-                self.log(f"    Set Projection.Mode to 'User defined' (was: '{current_value}')", "DEBUG")
+            # Check tech match
+            if is_olade:
+                # For OLADE: match PWR technologies by first 9 chars (PWR + 3 chars + country code)
+                # Example: Looking for tech_code='URN' country='ARG' should match 'PWRURNARGXX'
+                if row_tech_str.upper().startswith('PWR') and len(row_tech_str) >= 9:
+                    # Extract positions 4-6 (tech type) and 7-9 (country)
+                    row_tech_type = row_tech_str[3:6].upper()
+                    row_country = row_tech_str[6:9].upper()
 
-        return True, f"Row {target_row} updated with {values_updated} year values", values_updated
+                    if row_tech_type == tech.upper() and row_country == country.upper():
+                        target_rows.append(row_idx)
+            else:
+                # Exact match for manual instructions
+                if row_tech_str == tech:
+                    target_rows.append(row_idx)
+
+        if not target_rows:
+            tech_desc = f"Tech type='{tech}' Country='{country}'" if is_olade else f"Tech='{tech}'"
+            return False, f"No matching row found for {tech_desc} and Parameter='{parameter}'", 0
+
+        # Update year values for all matching rows
+        total_values_updated = 0
+        rows_updated = []
+
+        for target_row in target_rows:
+            values_updated = 0
+            for year, value in year_values.items():
+                if year in year_col_map:
+                    col_idx = year_col_map[year]
+                    ws.cell(target_row, col_idx, value)
+                    values_updated += 1
+
+            # Set Projection.Mode to "User defined" if column exists
+            if projection_mode_col:
+                current_value = ws.cell(target_row, projection_mode_col).value
+                if current_value != "User defined":
+                    ws.cell(target_row, projection_mode_col, "User defined")
+
+            total_values_updated += values_updated
+            rows_updated.append(target_row)
+
+        if len(rows_updated) > 1:
+            return True, f"Rows {rows_updated} updated with {total_values_updated} total year values", total_values_updated
+        else:
+            return True, f"Row {rows_updated[0]} updated with {total_values_updated} year values", total_values_updated
 
     def apply_instruction_to_scenario(self, instruction, scenario):
         """
@@ -242,13 +488,18 @@ class SecondaryTechsUpdater:
                         projection_mode_col = col_idx
 
             # Apply update
+            is_olade = instruction.get('is_olade', False)
+            country = instruction.get('country')
+
             success, message, values_updated = self.find_and_update_row(
                 ws,
                 instruction['tech'],
                 instruction['parameter'],
                 instruction['year_values'],
                 year_col_map,
-                projection_mode_col
+                projection_mode_col,
+                is_olade=is_olade,
+                country=country
             )
 
             if success:
@@ -304,6 +555,65 @@ class SecondaryTechsUpdater:
         if not all_success:
             self.rows_failed += 1
 
+    def generate_olade_instructions(self, all_years):
+        """
+        Generate instructions from OLADE data
+
+        Args:
+            all_years: list of years from Secondary Techs
+
+        Returns:
+            list of instruction dicts
+        """
+        if not self.olade_config['enabled']:
+            return []
+
+        self.log("")
+        self.log("=" * 80)
+        self.log("PROCESSING OLADE DATA")
+        self.log("=" * 80)
+        self.log(f"Growth rate: {self.olade_config['growth_rate']}%")
+        self.log(f"Growth type: {self.olade_config['growth_type']}")
+        self.log(f"Reference year: {self.olade_data['reference_year']}")
+        self.log("")
+
+        instructions = []
+        ref_year = self.olade_data['reference_year']
+
+        # Generate instructions for each country and technology
+        for country_iso3, techs in self.olade_data['data'].items():
+            for tech_code, base_capacity in techs.items():
+                # Calculate capacity for each year
+                year_values = {}
+                for year in all_years:
+                    capacity = calculate_capacity_for_year(
+                        base_capacity,
+                        ref_year,
+                        year,
+                        self.olade_config['growth_rate'],
+                        self.olade_config['growth_type']
+                    )
+                    year_values[year] = round(capacity, 2)
+
+                # Create instruction for each scenario
+                for scenario in self.scenarios:
+                    instruction = {
+                        'row': 'OLADE',
+                        'scenario': scenario,
+                        'country': country_iso3,
+                        'tech_name': f'PWR-{tech_code}',
+                        'tech': tech_code,  # This will be used to match PWR technologies
+                        'parameter': 'ResidualCapacity',
+                        'year_values': year_values,
+                        'is_olade': True
+                    }
+                    instructions.append(instruction)
+
+        self.log(f"Generated {len(instructions)} OLADE instructions")
+        self.log("")
+
+        return instructions
+
     def save_log(self, log_path):
         """Save log to file"""
         with open(log_path, 'w', encoding='utf-8') as f:
@@ -319,11 +629,74 @@ class SecondaryTechsUpdater:
         self.log("")
 
         try:
+            # Read OLADE configuration
+            self.olade_config = read_olade_config(self.editor_path)
+
+            if self.olade_config['enabled']:
+                self.log("OLADE integration: ENABLED")
+                if self.olade_file_path and self.olade_file_path.exists():
+                    self.log(f"OLADE file: {self.olade_file_path}")
+                    try:
+                        self.olade_data = read_olade_data(self.olade_file_path)
+                        self.log(f"OLADE data loaded: {len(self.olade_data['data'])} countries")
+                    except Exception as e:
+                        self.log(f"ERROR loading OLADE data: {e}", "ERROR")
+                        self.log("Continuing without OLADE data...", "WARNING")
+                        self.olade_config['enabled'] = False
+                else:
+                    self.log(f"WARNING: OLADE file not found: {self.olade_file_path}", "WARNING")
+                    self.log("Continuing without OLADE data...", "WARNING")
+                    self.olade_config['enabled'] = False
+            else:
+                self.log("OLADE integration: DISABLED")
+
+            self.log("")
+
             # Read editor file
             instructions = self.read_editor_file()
 
+            # Get all years from first scenario to determine year range
+            all_years = set()
+            scenario_path = self.base_path / "A1_Outputs_BAU" / "A-O_Parametrization.xlsx"
+            if scenario_path.exists():
+                wb = openpyxl.load_workbook(scenario_path, data_only=True)
+                if 'Secondary Techs' in wb.sheetnames:
+                    ws = wb['Secondary Techs']
+                    headers = [cell.value for cell in ws[1]]
+                    for header in headers:
+                        if header and str(header).isdigit():
+                            try:
+                                year = int(header)
+                                if 2000 <= year <= 2100:
+                                    all_years.add(year)
+                            except:
+                                pass
+                wb.close()
+
+            # Generate OLADE instructions if enabled
+            olade_instructions = []
+            if self.olade_config['enabled'] and self.olade_data:
+                olade_instructions = self.generate_olade_instructions(sorted(all_years))
+
+            # Combine instructions: OLADE takes priority for ResidualCapacity
+            # Filter out manual ResidualCapacity instructions for PWR techs if OLADE is enabled
+            if olade_instructions:
+                filtered_instructions = []
+                for instr in instructions:
+                    # Check if this is a ResidualCapacity instruction for a PWR tech
+                    if (instr.get('parameter') == 'ResidualCapacity' and
+                        instr.get('tech') and str(instr.get('tech')).upper().startswith('PWR')):
+                        # Skip it - OLADE will handle it
+                        self.log(f"Skipping manual ResidualCapacity for {instr['tech']} - using OLADE data", "DEBUG")
+                        continue
+                    filtered_instructions.append(instr)
+                instructions = filtered_instructions + olade_instructions
+            else:
+                # No OLADE, use manual instructions as-is
+                pass
+
             if not instructions:
-                self.log("No data found in editor file. Nothing to update.", "WARNING")
+                self.log("No data found to process. Nothing to update.", "WARNING")
                 return 0
 
             # Apply each instruction
@@ -335,7 +708,7 @@ class SecondaryTechsUpdater:
             self.log("=" * 80)
             self.log("SUMMARY")
             self.log("=" * 80)
-            self.log(f"Total rows processed: {len(instructions)}")
+            self.log(f"Total instructions processed: {len(instructions)}")
             self.log(f"Changes applied: {self.changes_applied}")
             self.log(f"Rows failed: {self.rows_failed}")
 
@@ -364,9 +737,10 @@ def main():
         script_dir = Path(__file__).parent
         editor_path = script_dir / "Secondary_Techs_Editor.xlsx"
         base_path = script_dir / "A1_Outputs"
+        olade_file_path = script_dir / "Capacidad instalada por fuente - Anual - OLADE.xlsx"
 
         # Create updater and run
-        updater = SecondaryTechsUpdater(editor_path, base_path)
+        updater = SecondaryTechsUpdater(editor_path, base_path, olade_file_path)
         return updater.run()
 
     except Exception as e:
